@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Login from './pages/Login';
 import { AdminDashboard, AgentDashboard, CustomerDashboard } from './pages/Dashboard';
 import Customers from './pages/Customers';
+import CustomerOnboarding from './pages/CustomerOnboarding';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/customers" element={<Customers />} />
+          <Route path="/admin/customers/create" element={<CustomerOnboarding />} />
           <Route path="/agent/dashboard" element={<AgentDashboard />} />
           <Route path="/customer/dashboard" element={<CustomerDashboard />} />
         </Route>

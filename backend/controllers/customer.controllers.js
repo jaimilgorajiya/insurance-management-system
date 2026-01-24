@@ -84,7 +84,10 @@ export const getCustomers = async (req, res) => {
             ];
         }
         
-        const customers = await User.find(query).select("-password").sort({ createdAt: -1 });
+        const customers = await User.find(query)
+            .select("-password")
+            .populate('createdBy', 'name email')
+            .sort({ createdAt: -1 });
         res.status(200).json({
             message: "Customers fetched successfully",
             total: customers.length,

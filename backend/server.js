@@ -7,6 +7,7 @@ import userCreationRoutes from "./routes/userCreation.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import agentRoutes from "./routes/agent.routes.js";
 import customerRoutes from "./routes/customer.routes.js";
+import customerOnboardingRoutes from "./routes/customerOnboarding.routes.js";
 import { verifyJWT } from "./middlewares/auth.middleware.js";
 import connectDB from "./db/db.js";
 
@@ -36,6 +37,7 @@ app.use("/api/users", userCreationRoutes);  // New user creation routes
 app.use("/api/admin", adminRoutes);
 app.use("/api/agent", agentRoutes);
 app.use("/api/customer", customerRoutes);
+app.use("/api/customer-onboarding", customerOnboardingRoutes);  // Customer onboarding routes
 
 // Shared endpoints
 app.get("/api/me", verifyJWT, (req, res) => {
