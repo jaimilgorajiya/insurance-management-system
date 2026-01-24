@@ -380,7 +380,7 @@ const CustomerOnboarding = () => {
                                         onChange={(e) => handleInputChange('alternatePhone', e.target.value)}
                                     />
                                 </div>
-                                <div className="form-group">
+                                <div className="form-group form-group-full">
                                     <label className="form-label">Address Line 1</label>
                                     <input
                                         type="text"
@@ -390,7 +390,7 @@ const CustomerOnboarding = () => {
                                         onChange={(e) => handleInputChange('addressLine1', e.target.value)}
                                     />
                                 </div>
-                                <div className="form-group">
+                                <div className="form-group form-group-full">
                                     <label className="form-label">Address Line 2</label>
                                     <input
                                         type="text"
