@@ -53,13 +53,9 @@ const Agents = () => {
 
             if (!res.ok) throw new Error('Failed to update agent');
 
-            // Optimistic Update
-            setAgents(prev => prev.map(a => 
-                a._id === currentAgent._id 
-                ? { ...a, ...formData } // Update UI with new data
-                : a
-            ));
-
+            // Refresh data to update UI and chart
+            fetchData();
+            
             setIsEditModalOpen(false);
             showSuccessAlert('Agent updated successfully');
         } catch (error) {
@@ -171,7 +167,8 @@ const Agents = () => {
 
             if (!res.ok) throw new Error('Failed to delete agent');
 
-            setAgents(prev => prev.filter(a => a._id !== id));
+            // Refresh data to update chart and list
+            fetchData();
             showSuccessAlert('Agent deleted successfully');
         } catch (error) {
             console.error("Error deleting agent:", error);
