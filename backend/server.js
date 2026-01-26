@@ -8,10 +8,14 @@ import adminRoutes from "./routes/admin.routes.js";
 import agentRoutes from "./routes/agent.routes.js";
 import customerRoutes from "./routes/customer.routes.js";
 import customerOnboardingRoutes from "./routes/customerOnboarding.routes.js";
+// import roleRoutes from "./routes/role.routes.js";
+import policyTypeRoutes from "./routes/policyType.routes.js";
+import policyRoutes from "./routes/policy.routes.js";
 import { verifyJWT } from "./middlewares/auth.middleware.js";
 import connectDB from "./db/db.js";
 
 dotenv.config();
+// Trigger restart 2
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -38,6 +42,9 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/agent", agentRoutes);
 app.use("/api/customer", customerRoutes);
 app.use("/api/customer-onboarding", customerOnboardingRoutes);  // Customer onboarding routes
+// app.use("/api/roles", roleRoutes); // Role management routes
+app.use("/api/admin/policy-types", policyTypeRoutes);
+app.use("/api/policies", policyRoutes);
 
 // Shared endpoints
 app.get("/api/me", verifyJWT, (req, res) => {
@@ -55,8 +62,20 @@ app.get("/api/me", verifyJWT, (req, res) => {
     });
 });
 
-app.get("/", (req, res) => {
-    res.send("Insurance CRM API is running...");
+// Global Error Handler
+app.use((err, req, res, next) => {
+    const statusCode = err.statusCode || 500;
+    const message = err.message || "Something went wrong";
+    
+    console.error(`[ERROR] ${statusCode} - ${message}`);
+    
+    res.status(statusCode).json({
+        success: false,
+        statusCode,
+        message,
+        errors: err.errors || [],
+        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
 });
 
 // Database Connection and Server Start
