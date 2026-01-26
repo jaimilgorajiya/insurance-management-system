@@ -15,7 +15,9 @@ const Customers = () => {
         total: 0,
         active: 0,
         pendingKyc: 0,
-        newThisMonth: 0
+        newThisMonth: 0,
+        growthRate: 0,
+        activeRate: 0
     });
 
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -62,12 +64,26 @@ const Customers = () => {
     const calculateStats = (data) => {
         const now = new Date();
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        
+        const total = data.length;
+        const active = data.filter(c => c.status === 'active').length;
+        const pendingKyc = data.filter(c => c.kycStatus === 'pending').length;
+        const newThisMonth = data.filter(c => new Date(c.createdAt) >= startOfMonth).length;
+        
+        // Calculate growth based on new customers this month vs previous total
+        const previousTotal = total - newThisMonth;
+        const growthRate = previousTotal > 0 ? ((newThisMonth / previousTotal) * 100).toFixed(1) : newThisMonth > 0 ? 100 : 0;
+        
+        // Calculate active percentage
+        const activeRate = total > 0 ? ((active / total) * 100).toFixed(0) : 0;
 
         setStats({
-            total: data.length,
-            active: data.filter(c => c.status === 'active').length,
-            pendingKyc: data.filter(c => c.kycStatus === 'pending').length,
-            newThisMonth: data.filter(c => new Date(c.createdAt) >= startOfMonth).length
+            total,
+            active,
+            pendingKyc,
+            newThisMonth,
+            growthRate,
+            activeRate
         });
     };
 
@@ -161,6 +177,70 @@ const Customers = () => {
         return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
     };
 
+    const handleExport = () => {
+        if (!customers.length) {
+            alert('No customers to export');
+            return;
+        }
+
+        const headers = [
+            'Customer ID',
+            'First Name', 
+            'Last Name',
+            'Email',
+            'Phone',
+            'Alternate Phone',
+            'Date of Birth',
+            'Gender',
+            'Occupation',
+            'Annual Income',
+            'Status',
+            'KYC Status',
+            'Address Line 1',
+            'Address Line 2',
+            'City',
+            'State',
+            'ZIP Code',
+            'Country',
+            'Created At'
+        ];
+
+        const csvContent = customers.map(customer => {
+            return [
+                customer._id,
+                customer.firstName || '',
+                customer.lastName || '',
+                customer.email || '',
+                customer.mobile || '',
+                customer.alternatePhone || '',
+                customer.dateOfBirth ? new Date(customer.dateOfBirth).toLocaleDateString() : '',
+                customer.gender || '',
+                customer.occupation || '',
+                customer.annualIncome || '',
+                customer.status || '',
+                customer.kycStatus || '',
+                customer.address?.addressLine1 || '',
+                customer.address?.addressLine2 || '',
+                customer.address?.city || '',
+                customer.address?.state || '',
+                customer.address?.zipCode || '',
+                customer.address?.country || '',
+                new Date(customer.createdAt).toLocaleDateString()
+            ].map(field => `"${String(field).replace(/"/g, '""')}"`).join(','); // Escape quotes and wrap in quotes
+        });
+
+        const csv = [headers.join(','), ...csvContent].join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `customers_export_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     return (
         <Layout>
             <div className="customers-page">
@@ -171,7 +251,7 @@ const Customers = () => {
                         <p className="page-subtitle">View and manage all customer information</p>
                     </div>
                     <div className="header-actions">
-                        <button className="btn-outline">
+                        <button className="btn-outline" onClick={handleExport}>
                             <ExportIcon /> Export
                         </button>
                         <button className="btn-primary" onClick={() => navigate('/admin/customers/create')}>
@@ -185,22 +265,30 @@ const Customers = () => {
                     <div className="stat-card">
                         <div className="stat-label">Total Customers</div>
                         <div className="stat-value">{stats.total.toLocaleString()}</div>
-                        <div className="stat-trend positive">↑ 12% from last month</div>
+                        <div className="stat-trend positive">
+                            {stats.growthRate > 0 ? '↑' : ''} {stats.growthRate}% from last month
+                        </div>
                     </div>
                     <div className="stat-card">
                         <div className="stat-label">Active Customers</div>
                         <div className="stat-value">{stats.active.toLocaleString()}</div>
-                        <div className="stat-trend positive">↑ 8% from last month</div>
+                        <div className="stat-trend neutral">
+                            {stats.activeRate}% of total customers
+                        </div>
                     </div>
                     <div className="stat-card">
                         <div className="stat-label">Pending KYC</div>
                         <div className="stat-value">{stats.pendingKyc}</div>
-                        <div className="stat-trend warning">Requires attention</div>
+                        <div className={`stat-trend ${stats.pendingKyc > 0 ? 'warning' : 'positive'}`}>
+                            {stats.pendingKyc > 0 ? 'Requires attention' : 'All caught up'}
+                        </div>
                     </div>
                     <div className="stat-card">
                         <div className="stat-label">New This Month</div>
                         <div className="stat-value">{stats.newThisMonth}</div>
-                        <div className="stat-trend neutral">Growth trend</div>
+                        <div className="stat-trend positive">
+                            Latest joining
+                        </div>
                     </div>
                 </div>
 
