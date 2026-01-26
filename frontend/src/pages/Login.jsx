@@ -143,16 +143,16 @@ export default function Login() {
           )}
 
           <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label className="form-label" htmlFor="email">Email Address</label>
-              <div className="input-group">
-                <span className="input-icon">
+            <div className="login-form-group">
+              <label className="login-form-label" htmlFor="email">Email Address</label>
+              <div className="login-input-group">
+                <span className="login-input-icon">
                   <EmailIcon />
                 </span>
                 <input
                   id="email"
                   type="email"
-                  className="form-input"
+                  className="login-form-input"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
@@ -162,16 +162,16 @@ export default function Login() {
               </div>
             </div>
 
-            <div className="form-group">
-              <label className="form-label" htmlFor="password">Password</label>
-              <div className="input-group">
-                <span className="input-icon">
+            <div className="login-form-group">
+              <label className="login-form-label" htmlFor="password">Password</label>
+              <div className="login-input-group">
+                <span className="login-input-icon">
                   <LockIcon />
                 </span>
                 <input
                   id="password"
                   type="password"
-                  className="form-input"
+                  className="login-form-input"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
@@ -196,7 +196,7 @@ export default function Login() {
               </label>
             </div>
 
-            <button type="submit" className="btn-primary" disabled={loading}>
+            <button type="submit" className="login-btn-primary" disabled={loading}>
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>

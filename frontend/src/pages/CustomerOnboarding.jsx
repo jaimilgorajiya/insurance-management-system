@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 const CustomerOnboarding = () => {
     const navigate = useNavigate();
     const [currentStep, setCurrentStep] = useState(1);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [documentModal, setDocumentModal] = useState({ isOpen: false, document: null });
 
     // Form data state
@@ -141,7 +142,10 @@ const CustomerOnboarding = () => {
     };
 
     const handleSubmit = async () => {
+        if (isSubmitting) return;
+
         try {
+            setIsSubmitting(true);
             // Prepare form data for multipart/form-data submission
             const formDataToSubmit = new FormData();
             
@@ -199,6 +203,14 @@ const CustomerOnboarding = () => {
             
             const result = await response.json();
             
+            if (response.status === 401) {
+                alert('Session expired. Please log in again.');
+                localStorage.removeItem('token');
+                localStorage.removeItem('userRole');
+                navigate('/');
+                return;
+            }
+
             if (!response.ok) {
                 throw new Error(result.message || 'Failed to submit onboarding');
             }
@@ -208,6 +220,7 @@ const CustomerOnboarding = () => {
             
         } catch (error) {
             console.error('Error submitting onboarding:', error);
+            setIsSubmitting(false);
             alert(`Error submitting onboarding: ${error.message}`);
         }
     };
@@ -680,8 +693,9 @@ const CustomerOnboarding = () => {
                             <button 
                                 className="btn-submit"
                                 onClick={handleSubmit}
+                                disabled={isSubmitting}
                             >
-                                Submit Onboarding
+                                {isSubmitting ? 'Submitting...' : 'Submit Onboarding'}
                             </button>
                         )}
                     </div>

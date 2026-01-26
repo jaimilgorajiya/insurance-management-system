@@ -39,6 +39,13 @@ const Customers = () => {
                 }
             });
 
+            if (res.status === 401) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('userRole');
+                navigate('/'); // Redirect to login
+                return;
+            }
+
             if (!res.ok) throw new Error('Failed to fetch customers');
 
             const data = await res.json();
