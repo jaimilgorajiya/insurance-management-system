@@ -12,6 +12,8 @@ import UsersAndRoles from './pages/UsersAndRoles';
 import PolicyTypes from './pages/PolicyTypes';
 import Policies from './pages/Policies';
 import PolicyDetails from './pages/PolicyDetails';
+import Documents from './pages/Documents';
+import CustomerDocuments from './pages/CustomerDocuments';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -39,6 +41,8 @@ function App() {
           <Route path="/admin/policy-types" element={<PolicyTypes />} />
           <Route path="/admin/policies" element={<Policies />} />
           <Route path="/admin/policies/:id" element={<PolicyDetails />} />
+          <Route path="/admin/documents" element={<Documents />} />
+          <Route path="/admin/documents/customers/:customerId" element={<CustomerDocuments />} />
           <Route path="/agent/dashboard" element={<AgentDashboard />} />
           <Route path="/customer/dashboard" element={<CustomerDashboard />} />
         </Route>
