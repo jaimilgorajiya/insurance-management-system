@@ -6,6 +6,8 @@ import {
 } from './LayoutIcons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './Layout.css';
+import { showSuccessAlert, showConfirmAction } from '../utils/swalUtils';
+import Swal from 'sweetalert2';
 
 const Sidebar = ({ collapsed, toggleSidebar }) => {
   const navigate = useNavigate();
@@ -23,10 +25,20 @@ const Sidebar = ({ collapsed, toggleSidebar }) => {
     { label: 'Reports', icon: <ReportsIcon />, path: '/admin/reports' },
   ];
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('userRole');
-    navigate('/login');
+  const handleLogout = async () => {
+    const isConfirmed = await showConfirmAction(
+      'Sign Out',
+      'Are you sure you want to log out?',
+      'Yes, log out',
+      '#ef4444'
+    );
+
+    if (isConfirmed) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('userRole');
+      navigate('/');
+      showSuccessAlert('Logged out successfully');
+    }
   };
 
   return (

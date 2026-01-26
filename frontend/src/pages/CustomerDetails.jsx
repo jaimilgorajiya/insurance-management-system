@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
+import { showSuccessAlert, showErrorAlert, showConfirmDelete } from '../utils/swalUtils';
+import Swal from 'sweetalert2';
 
 const CustomerDetails = () => {
     const { id } = useParams();
@@ -45,7 +47,17 @@ const CustomerDetails = () => {
     };
 
     const handleKycUpdate = async (newStatus) => {
-        if (!window.confirm(`Are you sure you want to ${newStatus} this customer's KYC?`)) return;
+        const result = await Swal.fire({
+            title: 'Are you sure?',
+            text: `Do you want to ${newStatus} this customer's KYC?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, update it!'
+        });
+
+        if (!result.isConfirmed) return;
 
         try {
             const token = localStorage.getItem('token');
@@ -62,10 +74,10 @@ const CustomerDetails = () => {
 
             const data = await res.json();
             setCustomer(data.customer);
-            alert(`Customer KYC ${newStatus} successfully`);
+            await showSuccessAlert(`Customer KYC ${newStatus} successfully`);
         } catch (err) {
-            alert('Error updating KYC status');
             console.error(err);
+            showErrorAlert('Error updating KYC status');
         }
     };
 
@@ -95,7 +107,7 @@ const CustomerDetails = () => {
             });
 
         } catch (err) {
-            alert('Error viewing document');
+            showErrorAlert('Error viewing document');
             console.error(err);
         }
     };

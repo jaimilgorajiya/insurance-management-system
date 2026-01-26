@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import Layout from '../components/Layout';
 import { useNavigate } from 'react-router-dom';
+import Layout from '../components/Layout';
+import { showSuccessAlert, showErrorAlert, showConfirmDelete, showWarningAlert } from '../utils/swalUtils';
 
 const Customers = () => {
     const navigate = useNavigate();
@@ -96,9 +97,8 @@ const Customers = () => {
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this customer? This action cannot be undone.')) {
-            return;
-        }
+        const isConfirmed = await showConfirmDelete('customer');
+        if (!isConfirmed) return;
 
         try {
             const token = localStorage.getItem('token');
@@ -122,11 +122,11 @@ const Customers = () => {
             const updatedCustomers = customers.filter(c => c._id !== id);
             setCustomers(updatedCustomers);
             calculateStats(updatedCustomers);
-            alert('Customer deleted successfully');
+            showSuccessAlert('Customer deleted successfully');
 
         } catch (error) {
             console.error("Error deleting customer:", error);
-            alert('Failed to delete customer');
+            showErrorAlert('Failed to delete customer');
         }
     };
 
@@ -179,7 +179,7 @@ const Customers = () => {
 
     const handleExport = () => {
         if (!customers.length) {
-            alert('No customers to export');
+            showWarningAlert('No customers to export');
             return;
         }
 

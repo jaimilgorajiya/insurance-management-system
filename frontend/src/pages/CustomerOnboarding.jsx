@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Layout from '../components/Layout';
 import { useNavigate } from 'react-router-dom';
+import { showSuccessAlert, showErrorAlert, showWarningAlert } from '../utils/swalUtils';
 
 const CustomerOnboarding = () => {
     const navigate = useNavigate();
@@ -101,14 +102,14 @@ const CustomerOnboarding = () => {
         // Validate file type
         const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf'];
         if (!allowedTypes.includes(file.type)) {
-            alert('Please upload only image files (JPEG, PNG, GIF) or PDF documents.');
+            showWarningAlert('Please upload only image files (JPEG, PNG, GIF) or PDF documents.', 'Invalid File Type');
             return;
         }
         
         // Validate file size (max 10MB)
         const maxSize = 10 * 1024 * 1024; // 10MB in bytes
         if (file.size > maxSize) {
-            alert('File size must be less than 10MB.');
+            showWarningAlert('File size must be less than 10MB.', 'File Too Large');
             return;
         }
         
@@ -204,7 +205,7 @@ const CustomerOnboarding = () => {
             const result = await response.json();
             
             if (response.status === 401) {
-                alert('Session expired. Please log in again.');
+                showWarningAlert('Session expired. Please log in again.');
                 localStorage.removeItem('token');
                 localStorage.removeItem('userRole');
                 navigate('/');
@@ -215,13 +216,13 @@ const CustomerOnboarding = () => {
                 throw new Error(result.message || 'Failed to submit onboarding');
             }
             
-            alert('Customer onboarding submitted successfully! Welcome email sent to customer.');
+            await showSuccessAlert('Customer onboarding submitted successfully! Welcome email sent to customer.');
             navigate('/admin/customers');
             
         } catch (error) {
             console.error('Error submitting onboarding:', error);
             setIsSubmitting(false);
-            alert(`Error submitting onboarding: ${error.message}`);
+            showErrorAlert(`Error submitting onboarding: ${error.message}`);
         }
     };
 
