@@ -11,6 +11,7 @@ const EditAgent = () => {
 
     const [isLoading, setIsLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [errors, setErrors] = useState({}); // Validation errors
     
     const [formData, setFormData] = useState({
         name: '',
@@ -22,11 +23,13 @@ const EditAgent = () => {
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
     useEffect(() => {
+        // ... (keep existing useEffect)
         if (isEditMode) {
             fetchAgentDetails();
         }
     }, [id]);
 
+    // ... (keep fetchAgentDetails)
     const fetchAgentDetails = async () => {
         setIsLoading(true);
         try {
@@ -57,8 +60,32 @@ const EditAgent = () => {
         }
     };
 
+    const validateField = (name, value) => {
+        let error = '';
+        if (name === 'mobile') {
+            if (!/^\d{10}$/.test(value)) {
+                error = 'Mobile number must be exactly 10 digits';
+            }
+        } else if (name === 'email') {
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+                error = 'Invalid email format';
+            }
+        }
+        return error;
+    };
+
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        
+        // Prevent typing non-digits for mobile
+        if (name === 'mobile' && !/^\d*$/.test(value)) return;
+        // Limit mobile to 10 digits
+        if (name === 'mobile' && value.length > 10) return;
+
+        setFormData({ ...formData, [name]: value });
+        
+        const error = validateField(name, value);
+        setErrors(prev => ({ ...prev, [name]: error }));
     };
 
     const handleSubmit = async (e) => {
@@ -160,6 +187,7 @@ const EditAgent = () => {
                                     required
                                     disabled={isEditMode}
                                 />
+                                {errors.email && <span style={{color: 'red', fontSize: '0.875rem'}}>{errors.email}</span>}
                                 {isEditMode && <p className="text-xs text-gray-500 mt-1">Email cannot be changed.</p>}
                             </div>
                             <div className="form-group form-group-full">
@@ -173,6 +201,7 @@ const EditAgent = () => {
                                     onChange={handleChange}
                                     required
                                 />
+                                {errors.mobile && <span style={{color: 'red', fontSize: '0.875rem'}}>{errors.mobile}</span>}
                             </div>
                             {isEditMode && (
                                 <div className="form-group form-group-full">

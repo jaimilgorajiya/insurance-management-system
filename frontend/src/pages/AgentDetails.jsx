@@ -1,13 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
-import { showWarningAlert } from '../utils/swalUtils';
+import { showWarningAlert, showSuccessAlert, showErrorAlert } from '../utils/swalUtils';
 
 const AgentDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const [agent, setAgent] = useState(null);
     const [loading, setLoading] = useState(true);
+
+    // Modal State
+    // Modal State
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [errors, setErrors] = useState({});
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        mobile: '',
+        status: 'active'
+    });
 
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -34,6 +46,78 @@ const AgentDetails = () => {
             console.error(error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleEditClick = () => {
+        setFormData({
+            name: agent.name,
+            email: agent.email,
+            mobile: agent.mobile,
+            status: agent.status
+        });
+        setErrors({});
+        setIsEditModalOpen(true);
+    };
+
+    const validateField = (name, value) => {
+        let error = '';
+        if (name === 'mobile') {
+             if (value.length !== 10) error = 'Mobile number must be exactly 10 digits';
+             if (!/^\d*$/.test(value)) error = 'Mobile number must contain only digits';
+        }
+        return error;
+    };
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        
+        if (name === 'mobile') {
+             if (!/^\d*$/.test(value)) return;
+             if (value.length > 10) return;
+        }
+
+        setFormData(prev => ({ ...prev, [name]: value }));
+        
+        const error = validateField(name, value);
+        setErrors(prev => ({ ...prev, [name]: error }));
+    };
+
+    const handleUpdateAgent = async (e) => {
+        e.preventDefault();
+        
+        // Final validation check
+        if (formData.mobile.length !== 10) {
+            setErrors(prev => ({ ...prev, mobile: 'Mobile number must be exactly 10 digits' }));
+            return;
+        }
+
+        setIsSubmitting(true);
+        // ... rest of submit
+        try {
+            // ...
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_BASE_URL}/agent/update/${agent._id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(formData)
+            });
+
+            if (!res.ok) throw new Error('Failed to update agent');
+
+            // Update local state
+            setAgent(prev => ({ ...prev, ...formData }));
+            
+            setIsEditModalOpen(false);
+            showSuccessAlert('Agent updated successfully');
+        } catch (error) {
+            console.error("Error updating agent:", error);
+            showErrorAlert('Failed to update agent');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -72,7 +156,7 @@ const AgentDetails = () => {
                          <span className={`badge-status ${agent.status}`} style={{fontSize: '1rem', padding: '0.5rem 1rem'}}>
                             {agent.status}
                         </span>
-                        <button className="btn-primary" onClick={() => navigate(`/admin/agents/edit/${agent._id}`)}>
+                        <button className="btn-primary" onClick={handleEditClick}>
                             Edit Agent
                         </button>
                     </div>
@@ -132,6 +216,100 @@ const AgentDetails = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Edit Agent Modal */}
+            {isEditModalOpen && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)', zIndex: 1000,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                    <div style={{
+                        backgroundColor: 'white', borderRadius: '0.75rem', padding: '2rem',
+                        width: '100%', maxWidth: '500px',
+                        boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#0f172a' }}>Edit Agent</h2>
+                            <button 
+                                onClick={() => setIsEditModalOpen(false)}
+                                style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}
+                            >
+                                &times;
+                            </button>
+                        </div>
+                        
+                        <form onSubmit={handleUpdateAgent}>
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', fontSize: '0.875rem', color: '#475569', marginBottom: '0.5rem' }}>Full Name</label>
+                                <input 
+                                    type="text" 
+                                    name="name"
+                                    className="form-input"
+                                    value={formData.name}
+                                    onChange={handleChange}
+                                    required
+                                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '0.375rem' }}
+                                />
+                            </div>
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', fontSize: '0.875rem', color: '#475569', marginBottom: '0.5rem' }}>Email (Read-only)</label>
+                                <input 
+                                    type="email" 
+                                    name="email"
+                                    className="form-input"
+                                    value={formData.email}
+                                    disabled
+                                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '0.375rem', backgroundColor: '#f1f5f9' }}
+                                />
+                            </div>
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', fontSize: '0.875rem', color: '#475569', marginBottom: '0.5rem' }}>Phone</label>
+                                <input 
+                                    type="tel" 
+                                    name="mobile"
+                                    className="form-input"
+                                    value={formData.mobile}
+                                    onChange={handleChange}
+                                    required
+                                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '0.375rem' }}
+                                />
+                                {errors.mobile && <span style={{color: 'red', fontSize: '0.875rem'}}>{errors.mobile}</span>}
+                            </div>
+                            <div style={{ marginBottom: '2rem' }}>
+                                <label style={{ display: 'block', fontSize: '0.875rem', color: '#475569', marginBottom: '0.5rem' }}>Status</label>
+                                <select 
+                                    name="status"
+                                    className="form-select"
+                                    value={formData.status}
+                                    onChange={handleChange}
+                                    style={{ width: '100%', padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '0.375rem' }}
+                                >
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                </select>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                                <button 
+                                    type="button" 
+                                    onClick={() => setIsEditModalOpen(false)}
+                                    style={{ padding: '0.5rem 1rem', border: '1px solid #cbd5e1', borderRadius: '0.375rem', backgroundColor: 'white', cursor: 'pointer' }}
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    type="submit" 
+                                    disabled={isSubmitting}
+                                    style={{ padding: '0.5rem 1rem', border: 'none', borderRadius: '0.375rem', backgroundColor: '#0f766e', color: 'white', cursor: 'pointer' }}
+                                >
+                                    {isSubmitting ? 'Saving...' : 'Save Changes'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </Layout>
     );
 };

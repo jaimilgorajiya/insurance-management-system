@@ -8,6 +8,7 @@ const CustomerOnboarding = () => {
     const [currentStep, setCurrentStep] = useState(1);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [documentModal, setDocumentModal] = useState({ isOpen: false, document: null });
+    const [errors, setErrors] = useState({}); // Validation errors
 
     // Form data state
     const [formData, setFormData] = useState({
@@ -60,12 +61,14 @@ const CustomerOnboarding = () => {
 
     const validateStep2 = () => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        const phoneRegex = /^[\+]?[\d\s\-\(\)]{10,}$/;
+        const phone = formData.phone.replace(/\D/g, ''); // Remove non-digits for validation
         
         return formData.email.trim() && 
                emailRegex.test(formData.email) &&
+               !errors.email && // Ensure no active email error
                formData.phone.trim() && 
-               phoneRegex.test(formData.phone.replace(/\s/g, '')) &&
+               phone.length === 10 && // Stricter 10-digit check
+               !errors.phone && // Ensure no active phone error
                formData.addressLine1.trim() && 
                formData.city.trim() && 
                formData.state.trim() && 
@@ -89,11 +92,32 @@ const CustomerOnboarding = () => {
         }
     };
 
+    const validateField = (field, value) => {
+        let error = '';
+        if (field === 'phone') {
+             if (value.length !== 10) error = 'Mobile number must be exactly 10 digits';
+             if (!/^\d*$/.test(value)) error = 'Mobile number must contain only digits';
+        } else if (field === 'email') {
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+                error = 'Invalid email format';
+            }
+        }
+        return error;
+    };
+
     const handleInputChange = (field, value) => {
+        if (field === 'phone') {
+             if (!/^\d*$/.test(value)) return;
+             if (value.length > 10) return;
+        }
+
         setFormData(prev => ({
             ...prev,
             [field]: value
         }));
+
+        const error = validateField(field, value);
+        setErrors(prev => ({ ...prev, [field]: error }));
     };
 
     const handleDocumentUpload = (documentType, file) => {
@@ -373,16 +397,18 @@ const CustomerOnboarding = () => {
                                         value={formData.email}
                                         onChange={(e) => handleInputChange('email', e.target.value)}
                                     />
+                                    {errors.email && <span style={{color: 'red', fontSize: '0.875rem'}}>{errors.email}</span>}
                                 </div>
                                 <div className="form-group">
                                     <label className="form-label">Phone Number</label>
                                     <input
                                         type="tel"
                                         className="form-input"
-                                        placeholder="+1 234-567-8900"
+                                        placeholder="1234567890"
                                         value={formData.phone}
                                         onChange={(e) => handleInputChange('phone', e.target.value)}
                                     />
+                                    {errors.phone && <span style={{color: 'red', fontSize: '0.875rem'}}>{errors.phone}</span>}
                                 </div>
                                 <div className="form-group">
                                     <label className="form-label">Alternate Phone</label>
