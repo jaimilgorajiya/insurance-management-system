@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { showSuccessAlert, showErrorAlert, showWarningAlert, showConfirmAction, showConfirmDelete } from '../utils/swalUtils';
-import { Eye, SquarePen, Trash2 } from 'lucide-react';
+import { Eye, SquarePen, Trash2, Shield, Heart, Home, Car, Plane, Briefcase, Umbrella, Activity } from 'lucide-react';
 
 const Policies = () => {
     const navigate = useNavigate();
@@ -15,6 +15,10 @@ const Policies = () => {
     const [isViewOnly, setIsViewOnly] = useState(false);
     const [policyStats, setPolicyStats] = useState([]);
     const [selectedType, setSelectedType] = useState(null);
+    const [filters, setFilters] = useState({
+        search: '',
+        status: 'All'
+    });
 
     const [formData, setFormData] = useState({
         policyName: '',
@@ -296,6 +300,18 @@ const Policies = () => {
         return premiumPalettes[seed % premiumPalettes.length];
     };
 
+    const getIconForPolicyType = (typeName = '') => {
+        const name = typeName.toLowerCase();
+        if (name.includes('health') || name.includes('medical')) return <Heart size={20} />;
+        if (name.includes('home') || name.includes('house') || name.includes('property')) return <Home size={20} />;
+        if (name.includes('car') || name.includes('motor') || name.includes('vehicle')) return <Car size={20} />;
+        if (name.includes('travel') || name.includes('tour')) return <Plane size={20} />;
+        if (name.includes('life')) return <Shield size={20} />;
+        if (name.includes('accident') || name.includes('critical')) return <Activity size={20} />;
+        if (name.includes('business')) return <Briefcase size={20} />;
+        return <Umbrella size={20} />;
+    };
+
     return (
         <Layout>
             <div className="onboarding-container">
@@ -314,22 +330,95 @@ const Policies = () => {
                     </div>
                 </div>
 
+                {/* Filters */}
+                <div className="filters-section" style={{ marginBottom: '1.5rem', background: 'transparent', padding: 0, border: 'none' }}>
+                    <div className="search-filter" style={{ 
+                        flex: 1, 
+                        position: 'relative', 
+                        padding: 0, 
+                        border: 'none', 
+                        backgroundColor: 'transparent' 
+                    }}>
+                        <div style={{ position: 'relative', width: '100%' }}>
+                            <div style={{ 
+                                position: 'absolute', 
+                                left: '12px', 
+                                top: '50%', 
+                                transform: 'translateY(-50%)', 
+                                color: '#94a3b8',
+                                display: 'flex',
+                                alignItems: 'center',
+                                pointerEvents: 'none',
+                                zIndex: 1
+                            }}>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                                </svg>
+                            </div>
+                            <input 
+                                type="text" 
+                                placeholder="Search by name, plan, or type..." 
+                                value={filters.search}
+                                onChange={(e) => setFilters({...filters, search: e.target.value})}
+                                className="form-input"
+                                style={{ 
+                                    paddingLeft: '40px',
+                                    width: '100%',
+                                    backgroundColor: 'white'
+                                }}
+                            />
+                        </div>
+                    </div>
+                    <select 
+                        className="form-select"
+                        style={{ width: '180px', backgroundColor: 'white' }}
+                        value={filters.status}
+                        onChange={(e) => setFilters({...filters, status: e.target.value})}
+                    >
+                        <option value="All">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                    <button 
+                        className="btn-outline" 
+                        onClick={() => setFilters({ search: '', status: 'All' })}
+                        style={{ height: '38px', backgroundColor: 'white' }}
+                    >
+                        Reset
+                    </button>
+                </div>
+
                 {/* Dynamic Summary Cards */}
-                <div className="stats-grid" style={{ marginBottom: '2rem' }}>
+                <div className="stats-grid" style={{ marginBottom: '2rem', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
                     <div 
                         className="stat-card"
                         onClick={() => setSelectedType(null)}
                         style={{ 
                             cursor: 'pointer', 
+                            padding: '1rem',
                             borderLeft: !selectedType ? '4px solid #2563eb' : '1px solid var(--border-color)',
-                            backgroundColor: !selectedType ? '#f8fafc' : 'white',
-                            transition: 'all 0.2s'
+                            backgroundColor: !selectedType ? '#eff6ff' : 'white',
+                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            transform: !selectedType ? 'translateY(-2px)' : 'none',
+                            boxShadow: !selectedType ? '0 10px 15px -3px rgba(37, 99, 235, 0.1)' : 'var(--shadow-sm)',
                         }}
                     >
-                        <div className="stat-label">Overall Policies</div>
-                        <div className="stat-value">{policies.length}</div>
-                        <div className="stat-trend" style={{ color: '#2563eb' }}>Show All</div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div>
+                                <div className="stat-label" style={{ color: !selectedType ? '#1e40af' : '#64748b', fontSize: '0.75rem', marginBottom: '0.25rem' }}>Overall Policies</div>
+                                <div className="stat-value" style={{ color: !selectedType ? '#1e40af' : '#0f172a', fontSize: '1.5rem' }}>{policies.length}</div>
+                            </div>
+                            <div style={{ 
+                                padding: '6px', 
+                                borderRadius: '8px', 
+                                backgroundColor: !selectedType ? '#dbeafe' : '#f1f5f9',
+                                color: !selectedType ? '#2563eb' : '#94a3b8'
+                            }}>
+                                <Shield size={18} />
+                            </div>
+                        </div>
                     </div>
+
                     {policyStats.map((stat) => {
                         const badge = getBadgeStyle(stat._id, stat.type);
                         const isActive = selectedType === stat._id;
@@ -340,24 +429,27 @@ const Policies = () => {
                                 onClick={() => setSelectedType(stat._id)}
                                 style={{ 
                                     cursor: 'pointer', 
+                                    padding: '1rem',
                                     borderLeft: isActive ? `4px solid ${badge.dot}` : '1px solid var(--border-color)',
                                     backgroundColor: isActive ? badge.bg : 'white',
-                                    transition: 'all 0.2s'
+                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    transform: isActive ? 'translateY(-2px)' : 'none',
+                                    boxShadow: isActive ? `0 10px 15px -3px ${badge.dot}20` : 'var(--shadow-sm)',
                                 }}
                             >
-                                <div className="stat-label">{stat.type}</div>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                    <div className="stat-value">{stat.count}</div>
-                                    <span style={{ 
-                                        padding: '2px 8px', 
-                                        borderRadius: '4px', 
-                                        fontSize: '0.7rem', 
-                                        backgroundColor: badge.bg, 
-                                        color: badge.text,
-                                        fontWeight: 700
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                    <div>
+                                        <div className="stat-label" style={{ color: isActive ? badge.text : '#64748b', fontSize: '0.75rem', marginBottom: '0.25rem' }}>{stat.type}</div>
+                                        <div className="stat-value" style={{ color: isActive ? badge.text : '#0f172a', fontSize: '1.5rem' }}>{stat.count}</div>
+                                    </div>
+                                    <div style={{ 
+                                        padding: '6px', 
+                                        borderRadius: '8px', 
+                                        backgroundColor: isActive ? `${badge.dot}20` : '#f1f5f9',
+                                        color: isActive ? badge.dot : '#94a3b8'
                                     }}>
-                                        Active Type
-                                    </span>
+                                        {getIconForPolicyType(stat.type)}
+                                    </div>
                                 </div>
                             </div>
                         );
@@ -383,6 +475,15 @@ const Policies = () => {
                             <tbody>
                                 {policies
                                     .filter(p => !selectedType || p.policyType?._id === selectedType)
+                                    .filter(p => filters.status === 'All' || p.status === filters.status)
+                                    .filter(p => {
+                                        const search = filters.search.toLowerCase();
+                                        return (
+                                            p.policyName.toLowerCase().includes(search) ||
+                                            p.planName.toLowerCase().includes(search) ||
+                                            (p.policyType?.name || '').toLowerCase().includes(search)
+                                        );
+                                    })
                                     .map(policy => {
                                     const badge = getBadgeStyle(policy.policyType?._id, policy.policyType?.name);
                                     return (

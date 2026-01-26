@@ -7,11 +7,16 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 export const getPolicies = asyncHandler(async (req, res) => {
     // Populate policyType name
     const policies = await Policy.find({})
-        .populate("policyType", "name badgeColor")
+        .populate("policyType", "name status")
         .sort({ createdAt: -1 });
 
+    // Filter out policies that belong to an inactive category
+    const activePolicies = policies.filter(policy => 
+        !policy.policyType || policy.policyType.status === 'active'
+    );
+
     return res.status(200).json(
-        new ApiResponse(200, policies, "Policies fetched successfully")
+        new ApiResponse(200, activePolicies, "Policies fetched successfully")
     );
 });
 
@@ -49,6 +54,11 @@ export const getPolicySummary = asyncHandler(async (req, res) => {
         },
         {
             $unwind: "$typeInfo"
+        },
+        {
+            $match: {
+                "typeInfo.status": "active"
+            }
         },
         {
             $project: {

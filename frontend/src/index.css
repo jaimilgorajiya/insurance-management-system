@@ -510,7 +510,7 @@ a {
 
 .form-input, .form-select {
     padding: 0.5rem 0.75rem;
-    padding-left: 0.75rem !important; /* Force reset left padding */
+    padding-left: 0.75rem; 
     border: 1px solid var(--input-border);
     border-radius: 6px;
     font-size: 0.875rem;
