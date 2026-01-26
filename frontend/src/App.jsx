@@ -3,6 +3,8 @@ import Login from './pages/Login';
 import { AdminDashboard, AgentDashboard, CustomerDashboard } from './pages/Dashboard';
 import Customers from './pages/Customers';
 import CustomerOnboarding from './pages/CustomerOnboarding';
+import CustomerDetails from './pages/CustomerDetails';
+import EditCustomer from './pages/EditCustomer';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -20,6 +22,8 @@ function App() {
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/customers" element={<Customers />} />
           <Route path="/admin/customers/create" element={<CustomerOnboarding />} />
+          <Route path="/admin/customers/edit/:id" element={<EditCustomer />} />
+          <Route path="/admin/customers/:id" element={<CustomerDetails />} />
           <Route path="/agent/dashboard" element={<AgentDashboard />} />
           <Route path="/customer/dashboard" element={<CustomerDashboard />} />
         </Route>

@@ -79,6 +79,41 @@ const Customers = () => {
         setFilters({ search: '', status: 'All', kycStatus: 'All' });
     };
 
+    const handleDelete = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this customer? This action cannot be undone.')) {
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_BASE_URL}/customer/delete/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (res.status === 401) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('userRole');
+                navigate('/');
+                return;
+            }
+
+            if (!res.ok) throw new Error('Failed to delete customer');
+
+            // Remove from local state and update stats
+            const updatedCustomers = customers.filter(c => c._id !== id);
+            setCustomers(updatedCustomers);
+            calculateStats(updatedCustomers);
+            alert('Customer deleted successfully');
+
+        } catch (error) {
+            console.error("Error deleting customer:", error);
+            alert('Failed to delete customer');
+        }
+    };
+
     // Icons
     const ExportIcon = () => (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -111,6 +146,13 @@ const Customers = () => {
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" strokeLinecap="round" strokeLinejoin="round"/>
             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+    );
+
+    const DeleteIcon = () => (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M3 6h18" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
     );
 
@@ -253,11 +295,24 @@ const Customers = () => {
                                         <td>{new Date(customer.createdAt).toLocaleDateString()}</td>
                                         <td>
                                             <div className="actions-cell">
-                                                <button className="action-btn view">
-                                                    <EyeIcon /> View
+                                                <button 
+                                                    className="action-btn view"
+                                                    onClick={() => navigate(`/admin/customers/${customer._id}`)}
+                                                >
+                                                    <EyeIcon /> 
                                                 </button>
-                                                <button className="action-btn edit">
-                                                    <EditIcon /> Edit
+                                                <button 
+                                                    className="action-btn edit"
+                                                    onClick={() => navigate(`/admin/customers/edit/${customer._id}`)}
+                                                >
+                                                    <EditIcon /> 
+                                                </button>
+                                                <button 
+                                                    className="action-btn delete"
+                                                    onClick={() => handleDelete(customer._id)}
+                                                    style={{ color: '#ef4444' }}
+                                                >
+                                                    <DeleteIcon /> 
                                                 </button>
                                             </div>
                                         </td>

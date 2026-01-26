@@ -420,3 +420,120 @@ export const getCustomerOnboardingDetails = async (req, res) => {
         });
     }
 };
+
+// Update customer onboarding details (including optional new files)
+export const updateCustomerOnboarding = async (req, res) => {
+    try {
+        const { customerId } = req.params;
+        const {
+            firstName,
+            lastName,
+            dateOfBirth,
+            gender,
+            occupation,
+            annualIncome,
+            email,
+            phone,
+            alternatePhone,
+            addressLine1,
+            addressLine2,
+            city,
+            state,
+            zipCode,
+            country
+        } = req.body;
+
+        const customer = await User.findById(customerId);
+        if (!customer) {
+            return res.status(404).json({
+                success: false,
+                message: "Customer not found"
+            });
+        }
+
+        // Update basic fields
+        if (firstName) customer.firstName = firstName;
+        if (lastName) customer.lastName = lastName;
+        if (firstName || lastName) customer.name = `${firstName || customer.firstName} ${lastName || customer.lastName}`;
+        if (dateOfBirth) customer.dateOfBirth = new Date(dateOfBirth);
+        if (gender) customer.gender = gender;
+        if (occupation) customer.occupation = occupation;
+        if (annualIncome) customer.annualIncome = parseFloat(annualIncome);
+        if (email) customer.email = email;
+        if (phone) customer.mobile = phone;
+        if (alternatePhone) customer.alternatePhone = alternatePhone;
+
+        // Update Address
+        if (!customer.address) customer.address = {};
+        if (addressLine1) customer.address.addressLine1 = addressLine1;
+        if (addressLine2) customer.address.addressLine2 = addressLine2;
+        if (city) customer.address.city = city;
+        if (state) customer.address.state = state;
+        if (zipCode) customer.address.zipCode = zipCode;
+        if (country) customer.address.country = country;
+
+        // Update Documents if files are uploaded
+        if (req.files) {
+            if (!customer.kycDocuments) customer.kycDocuments = {};
+
+            const updateDoc = (docType) => {
+                if (req.files[docType] && req.files[docType][0]) {
+                    // Delete old file if exists
+                    if (customer.kycDocuments[docType]?.filename) {
+                        const oldPath = path.join(uploadsDir, customer.kycDocuments[docType].filename);
+                        if (fs.existsSync(oldPath)) {
+                            try {
+                                fs.unlinkSync(oldPath);
+                            } catch (e) {
+                                console.log("Old file not found or couldn't be deleted:", e.message);
+                            }
+                        }
+                    }
+
+                    // Set new file info
+                    customer.kycDocuments[docType] = {
+                        filename: req.files[docType][0].filename,
+                        originalName: req.files[docType][0].originalname,
+                        uploadDate: new Date(),
+                        fileType: req.files[docType][0].mimetype,
+                        fileSize: req.files[docType][0].size,
+                        status: "pending" // Reset status to pending on new upload
+                    };
+                    
+                    // Reset overall KYC status to pending if a new doc is uploaded
+                    customer.kycStatus = "pending";
+                }
+            };
+
+            updateDoc('governmentId');
+            updateDoc('proofOfAddress');
+            updateDoc('incomeProof');
+        }
+
+        await customer.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Customer details updated successfully",
+            data: { customer }
+        });
+
+    } catch (error) {
+        console.error("Customer update error:", error);
+         // Clean up uploaded files if update fails
+         if (req.files) {
+            Object.values(req.files).forEach(fileArray => {
+                fileArray.forEach(file => {
+                    fs.unlink(file.path, (err) => {
+                        if (err) console.error("Error deleting file:", err);
+                    });
+                });
+            });
+        }
+        res.status(500).json({
+            success: false,
+            message: "Internal server error during update",
+            error: error.message
+        });
+    }
+};

@@ -4,7 +4,8 @@ import {
     upload, 
     getKYCDocument, 
     updateKYCDocumentStatus, 
-    getCustomerOnboardingDetails 
+    getCustomerOnboardingDetails,
+    updateCustomerOnboarding
 } from "../controllers/customerOnboarding.controllers.js";
 import { verifyJWT, authorizeRoles } from "../middlewares/auth.middleware.js";
 
@@ -43,6 +44,18 @@ router.get("/details/:customerId",
     verifyJWT, 
     authorizeRoles("admin", "agent", "customer"),
     getCustomerOnboardingDetails
+);
+
+// Update Customer Onboarding Details (including files)
+router.put("/update/:customerId",
+    verifyJWT,
+    authorizeRoles("admin", "agent"),
+    upload.fields([
+        { name: 'governmentId', maxCount: 1 },
+        { name: 'proofOfAddress', maxCount: 1 },
+        { name: 'incomeProof', maxCount: 1 }
+    ]),
+    updateCustomerOnboarding
 );
 
 export default router;
