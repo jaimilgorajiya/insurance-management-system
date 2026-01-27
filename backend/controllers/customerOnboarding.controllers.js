@@ -1,4 +1,5 @@
 import { User } from "../models/user.models.js";
+import { Policy } from "../models/policy.models.js";
 import { hashPassword } from "@jaimilgorajiya/password-utils";
 import { sendCredentialsEmail } from "../services/emailService.js";
 import multer from "multer";
@@ -118,6 +119,32 @@ export const onboardCustomer = async (req, res) => {
                 success: false,
                 message: "All KYC documents are required (Government ID, Proof of Address, Income Proof)"
             });
+        }
+
+        // Validate Policy Age Eligibility
+        if (selectedPolicy) {
+            const policy = await Policy.findById(selectedPolicy);
+            if (!policy) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Selected policy not found"
+                });
+            }
+
+            const birthDate = new Date(dateOfBirth);
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+
+            if (age < policy.minAge || age > policy.maxAge) {
+                 return res.status(400).json({
+                    success: false,
+                    message: `Age eligibility failed. Customer age (${age}) must be between ${policy.minAge} and ${policy.maxAge} years for this policy.`
+                });
+            }
         }
 
         // Generate temporary password

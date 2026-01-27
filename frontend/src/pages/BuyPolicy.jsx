@@ -4,6 +4,18 @@ import Layout from '../components/Layout';
 import { showSuccessAlert, showErrorAlert, showConfirmAction } from '../utils/swalUtils';
 import { Shield, Heart, Home, Car, Plane, Briefcase, Umbrella, Activity, Building, CheckCircle, ArrowLeft } from 'lucide-react';
 
+const calculateAge = (dobString) => {
+    if (!dobString) return 0;
+    const birthDate = new Date(dobString);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    return age;
+};
+
 const BuyPolicy = () => {
     const navigate = useNavigate();
     const { customerId } = useParams(); // Get customer ID from URL route
@@ -13,6 +25,7 @@ const BuyPolicy = () => {
     const [loading, setLoading] = useState(true);
     const [providers, setProviders] = useState([]);
     const [customerName, setCustomerName] = useState('');
+    const [customerAge, setCustomerAge] = useState(0);
     const [selectedType, setSelectedType] = useState(null);
 
     const [filters, setFilters] = useState({
@@ -25,7 +38,7 @@ const BuyPolicy = () => {
 
     useEffect(() => {
         if (customerId) {
-            fetchCustomerName(customerId);
+            fetchCustomerDetails(customerId);
         }
         fetchPolicies();
         fetchPolicyTypes();
@@ -60,7 +73,7 @@ const BuyPolicy = () => {
         setFilteredPolicies(result);
     }, [policies, selectedType, filters]);
 
-    const fetchCustomerName = async (id) => {
+    const fetchCustomerDetails = async (id) => {
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`${API_BASE_URL}/customer-onboarding/details/${id}`, {
@@ -69,9 +82,12 @@ const BuyPolicy = () => {
             const data = await res.json();
             if (res.ok) {
                 setCustomerName(data.data.customer.name);
+                if (data.data.customer.dateOfBirth) {
+                    setCustomerAge(calculateAge(data.data.customer.dateOfBirth));
+                }
             }
         } catch (error) {
-            console.error("Error fetching customer name");
+            console.error("Error fetching customer details");
         }
     };
 
@@ -278,86 +294,134 @@ const BuyPolicy = () => {
                     <div className="text-center p-8">Loading policies...</div>
                 ) : (
                     <div className="policy-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.5rem' }}>
-                        {filteredPolicies.map(policy => (
-                            <div key={policy._id} style={{ 
-                                backgroundColor: 'white', 
-                                borderRadius: '16px', 
-                                border: '1px solid #e2e8f0',
-                                padding: '1.5rem',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                transition: 'all 0.2s',
-                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
-                            }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                                    <div style={{ 
-                                        padding: '0.25rem 0.75rem', 
-                                        borderRadius: '9999px', 
-                                        backgroundColor: policy.policySource === 'THIRD_PARTY' ? '#fff7ed' : '#f0fdf4',
-                                        color: policy.policySource === 'THIRD_PARTY' ? '#c2410c' : '#15803d',
-                                        fontSize: '0.75rem',
-                                        fontWeight: 600,
-                                        border: `1px solid ${policy.policySource === 'THIRD_PARTY' ? '#fdba74' : '#86efac'}`
+                        {(() => {
+                            if (filteredPolicies.length === 0) {
+                                return (
+                                    <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px dashed #e2e8f0' }}>
+                                        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔍</div>
+                                        <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#0f172a', marginBottom: '0.5rem' }}>No policies found</h3>
+                                        <p style={{ color: '#64748b', fontSize: '1rem', marginBottom: '1.5rem' }}>No policies match your search or filter criteria.</p>
+                                        <button className="btn-outline" onClick={() => { setFilters({ search: '', source: 'All', provider: 'All' }); setSelectedType(null); }}>Clear all filters</button>
+                                    </div>
+                                );
+                            }
+
+                            const hasEligible = filteredPolicies.some(p => customerAge >= (p.minAge || 0) && customerAge <= (p.maxAge || 100));
+                            
+                            if (!hasEligible && filteredPolicies.length > 0) {
+                                return (
+                                    <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem', backgroundColor: '#fff1f2', borderRadius: '12px', border: '1px dashed #fecaca' }}>
+                                        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚠️</div>
+                                        <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#e11d48', marginBottom: '0.5rem' }}>No Eligible Policies Found</h3>
+                                        <p style={{ color: '#64748b', fontSize: '1rem', marginBottom: '1.5rem' }}>
+                                            Based on the customer's age (<strong>{customerAge} years</strong>), no policies in this category are eligible.
+                                        </p>
+                                        <button className="btn-outline" onClick={() => setSelectedType(null)}>View All Categories</button>
+                                    </div>
+                                );
+                            }
+
+                            return filteredPolicies.map(policy => {
+                                const isEligible = customerAge >= (policy.minAge || 0) && customerAge <= (policy.maxAge || 100);
+                                return (
+                                    <div key={policy._id} style={{ 
+                                        backgroundColor: 'white', 
+                                        borderRadius: '16px', 
+                                        border: '1px solid #e2e8f0',
+                                        padding: '1.5rem',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        transition: 'all 0.2s',
+                                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+                                        opacity: isEligible ? 1 : 0.7,
+                                        position: 'relative'
                                     }}>
-                                        {policy.policySource === 'THIRD_PARTY' ? 'Third-Party' : 'In-House'}
-                                    </div>
-                                    <div style={{ 
-                                        color: '#64748b', 
-                                        fontSize: '0.875rem', 
-                                        display: 'flex', 
-                                        alignItems: 'center', 
-                                        gap: '0.25rem',
-                                        fontWeight: 500
-                                    }}>
-                                        {getIconForPolicyType(policy.policyType?.name)}
-                                        {policy.policyType?.name}
-                                    </div>
-                                </div>
-
-                                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.25rem' }}>
-                                    {policy.policyName}
-                                </h3>
-                                <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '1.25rem' }}>{policy.planName}</p>
-
-                                <div style={{ marginBottom: '1.5rem' }}>
-                                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.25rem', marginBottom: '0.25rem' }}>
-                                        <span style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a' }}>${policy.premiumAmount?.toLocaleString()}</span>
-                                        <span style={{ color: '#64748b' }}>/ {policy.tenureValue} {policy.tenureUnit}</span>
-                                    </div>
-                                    <div style={{ fontSize: '0.875rem', color: '#64748b' }}>
-                                        Coverage up to <strong style={{ color: '#334155' }}>${policy.coverageAmount?.toLocaleString()}</strong>
-                                    </div>
-                                </div>
-
-                                {policy.provider && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', padding: '0.75rem', backgroundColor: '#f8fafc', borderRadius: '8px' }}>
-                                        <div style={{ padding: '4px', backgroundColor: 'white', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
-                                            <Building size={16} color="#64748b" />
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                                <div style={{ 
+                                                    padding: '0.25rem 0.75rem', 
+                                                    borderRadius: '9999px', 
+                                                    backgroundColor: policy.policySource === 'THIRD_PARTY' ? '#fff7ed' : '#f0fdf4',
+                                                    color: policy.policySource === 'THIRD_PARTY' ? '#c2410c' : '#15803d',
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: 600,
+                                                    border: `1px solid ${policy.policySource === 'THIRD_PARTY' ? '#fdba74' : '#86efac'}`
+                                                }}>
+                                                    {policy.policySource === 'THIRD_PARTY' ? 'Third-Party' : 'In-House'}
+                                                </div>
+                                                
+                                                {!isEligible && (
+                                                    <div style={{ 
+                                                        padding: '0.25rem 0.75rem', 
+                                                        borderRadius: '9999px', 
+                                                        backgroundColor: '#fef2f2',
+                                                        color: '#ef4444',
+                                                        fontSize: '0.75rem',
+                                                        fontWeight: 600,
+                                                        border: '1px solid #fecaca'
+                                                    }}>
+                                                        Age Ineligible
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div style={{ 
+                                                color: '#64748b', 
+                                                fontSize: '0.875rem', 
+                                                display: 'flex', 
+                                                alignItems: 'center', 
+                                                gap: '0.25rem',
+                                                fontWeight: 500
+                                            }}>
+                                                {getIconForPolicyType(policy.policyType?.name)}
+                                                {policy.policyType?.name}
+                                            </div>
                                         </div>
-                                        <div>
-                                            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Provider</div>
-                                            <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>{policy.provider.name}</div>
+
+                                        <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.25rem' }}>
+                                            {policy.policyName}
+                                        </h3>
+                                        <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '1.25rem' }}>{policy.planName}</p>
+
+                                        <div style={{ marginBottom: '1.5rem' }}>
+                                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.25rem', marginBottom: '0.25rem' }}>
+                                                <span style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a' }}>${policy.premiumAmount?.toLocaleString()}</span>
+                                                <span style={{ color: '#64748b' }}>/ {policy.tenureValue} {policy.tenureUnit}</span>
+                                            </div>
+                                            <div style={{ fontSize: '0.875rem', color: '#64748b', display: 'flex', justifyContent: 'space-between' }}>
+                                                <span>Coverage up to <strong style={{ color: '#334155' }}>${policy.coverageAmount?.toLocaleString()}</strong></span>
+                                            </div>
+                                            <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.5rem' }}>
+                                                Eligible Age: <strong style={{ color: isEligible ? '#64748b' : '#ef4444' }}>{policy.minAge} - {policy.maxAge} years</strong>
+                                                {!isEligible && ` (Customer: ${customerAge})`}
+                                            </div>
+                                        </div>
+
+                                        {policy.provider && (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', padding: '0.75rem', backgroundColor: '#f8fafc', borderRadius: '8px' }}>
+                                                <div style={{ padding: '4px', backgroundColor: 'white', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
+                                                    <Building size={16} color="#64748b" />
+                                                </div>
+                                                <div>
+                                                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Provider</div>
+                                                    <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>{policy.provider.name}</div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div style={{ marginTop: 'auto' }}>
+                                            <button 
+                                                className={isEligible ? "btn-primary" : "btn-secondary disabled"} 
+                                                style={{ width: '100%', justifyContent: 'center', cursor: isEligible ? 'pointer' : 'not-allowed' }}
+                                                onClick={() => isEligible && handleBuyPolicy(policy)}
+                                                disabled={!isEligible}
+                                            >
+                                                {isEligible ? 'Buy Policy' : 'Age Ineligible'}
+                                            </button>
                                         </div>
                                     </div>
-                                )}
-
-                                <div style={{ marginTop: 'auto' }}>
-                                    <button 
-                                        className="btn-primary" 
-                                        style={{ width: '100%', justifyContent: 'center' }}
-                                        onClick={() => handleBuyPolicy(policy)}
-                                    >
-                                        Buy Policy
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
-                        {filteredPolicies.length === 0 && (
-                            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem', backgroundColor: '#f8fafc', borderRadius: '12px' }}>
-                                <p style={{ color: '#64748b', fontSize: '1.1rem' }}>No policies match your filters.</p>
-                                <button className="btn-link" onClick={() => { setFilters({ search: '', source: 'All', provider: 'All' }); setSelectedType(null); }}>Clear all filters</button>
-                            </div>
-                        )}
+                                );
+                            });
+                        })()}
                     </div>
                 )}
             </div>

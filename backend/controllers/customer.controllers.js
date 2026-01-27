@@ -126,11 +126,32 @@ export const updateCustomer = async (req, res) => {
         if (kycStatus) updateOperations.$set.kycStatus = kycStatus;
         
         if (selectedPolicy) {
+            // Fetch policy for validation
+            const policy = await Policy.findById(selectedPolicy).populate('policyType').populate('provider');
+            if (!policy) return res.status(404).json({ message: "Selected policy not found" });
+
+            // Validate Age Eligibility
+            if (customer.dateOfBirth) {
+                const birthDate = new Date(customer.dateOfBirth);
+                const today = new Date();
+                let age = today.getFullYear() - birthDate.getFullYear();
+                const m = today.getMonth() - birthDate.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+
+                if (age < policy.minAge || age > policy.maxAge) {
+                    return res.status(400).json({
+                        success: false,
+                        message: `Age eligibility failed. Customer age (${age}) must be between ${policy.minAge} and ${policy.maxAge} years for this policy.`
+                    });
+                }
+            }
+
             updateOperations.$set.selectedPolicy = selectedPolicy;
             
             // Logic to generate Policy Document
             try {
-                const policy = await Policy.findById(selectedPolicy).populate('policyType').populate('provider');
                 if (policy) {
                     const timestamp = Date.now();
                     const fileName = `Policy_${id}_${selectedPolicy}_${timestamp}.pdf`;

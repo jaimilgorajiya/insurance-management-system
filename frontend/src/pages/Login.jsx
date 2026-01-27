@@ -131,7 +131,7 @@ export default function Login() {
            <div className="logo-background">
              <ShieldIcon />
            </div>
-           <h1 className="brand-title">PolicyCore</h1>
+           <h1 className="brand-title">InsureCRM</h1>
            <p className="login-subtitle">Sign in to access your dashboard</p>
         </div>
 
@@ -203,7 +203,7 @@ export default function Login() {
         </div>
         
         <footer className="login-footer">
-          <p>© 2026 PolicyCore. All rights reserved.</p>
+          <p>© 2026 InsureCRM. All rights reserved.</p>
         </footer>
       </div>
     </div>

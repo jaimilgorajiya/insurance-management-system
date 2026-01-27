@@ -3,6 +3,18 @@ import Layout from '../components/Layout';
 import { useNavigate } from 'react-router-dom';
 import { showSuccessAlert, showErrorAlert, showWarningAlert } from '../utils/swalUtils';
 
+const calculateAge = (dobString) => {
+    if (!dobString) return 0;
+    const birthDate = new Date(dobString);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    return age;
+};
+
 const CustomerOnboarding = () => {
     const navigate = useNavigate();
     const [currentStep, setCurrentStep] = useState(1);
@@ -660,32 +672,56 @@ const CustomerOnboarding = () => {
                                         Choose a policy type from the dropdown above to view available plans.
                                     </p>
                                 </div>
-                            ) : policies.filter(p => p.policyType?._id === selectedTypeFilter).length === 0 ? (
-                                <div className="empty-state">
-                                    <div className="empty-state-icon">📋</div>
-                                    <h3 className="empty-state-title">No policies found</h3>
-                                    <p className="empty-state-description">
-                                        There are no active policies available for the selected type.
-                                    </p>
-                                </div>
-                            ) : (
-                                <div className="policies-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
-                                    {policies
-                                        .filter(p => p.policyType?._id === selectedTypeFilter)
-                                        .map(policy => {
-                                        const isSelected = formData.selectedPolicy === policy._id;
-                                        const isThirdParty = policy.policySource === 'THIRD_PARTY';
+                                ) : (
+                                    (() => {
+                                        const filteredByType = policies.filter(p => p.policyType?._id === selectedTypeFilter);
+                                        const customerAge = calculateAge(formData.dateOfBirth);
+                                        const eligiblePolicies = filteredByType.filter(p => customerAge >= (p.minAge || 0) && customerAge <= (p.maxAge || 100));
+
+                                        if (filteredByType.length === 0) {
+                                            return (
+                                                <div className="empty-state">
+                                                    <div className="empty-state-icon">📋</div>
+                                                    <h3 className="empty-state-title">No policies found</h3>
+                                                    <p className="empty-state-description">
+                                                        There are no active policies available for the selected type.
+                                                    </p>
+                                                </div>
+                                            );
+                                        }
+
+                                        if (eligiblePolicies.length === 0) {
+                                            return (
+                                                <div className="empty-state">
+                                                    <div className="empty-state-icon" style={{ backgroundColor: '#fff1f2', color: '#e11d48' }}>⚠️</div>
+                                                    <h3 className="empty-state-title">No eligible policies</h3>
+                                                    <p className="empty-state-description">
+                                                        No available policies match the customer's age criteria (Age: {customerAge} years). 
+                                                        Please check the Date of Birth or select a different policy type.
+                                                    </p>
+                                                </div>
+                                            );
+                                        }
+
+                                        return (
+                                            <div className="policies-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                                                {filteredByType.map(policy => {
+                                                    const isSelected = formData.selectedPolicy === policy._id;
+                                                    const isThirdParty = policy.policySource === 'THIRD_PARTY';
+                                                    const isEligible = customerAge >= (policy.minAge || 0) && customerAge <= (policy.maxAge || 100);
                                         
                                         return (
                                             <div 
                                                 key={policy._id}
-                                                onClick={() => handlePolicySelect(policy)}
+                                                onClick={() => isEligible && handlePolicySelect(policy)}
+                                                title={!isEligible ? `Not eligible. Required Age: ${policy.minAge} - ${policy.maxAge} years` : ''}
                                                 style={{
                                                     border: isSelected ? '2px solid #2563eb' : '1px solid #e2e8f0',
                                                     borderRadius: '12px',
                                                     padding: '0',
-                                                    cursor: 'pointer',
-                                                    backgroundColor: isSelected ? '#eff6ff' : 'white',
+                                                    cursor: isEligible ? 'pointer' : 'not-allowed',
+                                                    backgroundColor: isSelected ? '#eff6ff' : isEligible ? 'white' : '#f8f8f8',
+                                                    opacity: isEligible ? 1 : 0.6,
                                                     transition: 'all 0.2s ease',
                                                     boxShadow: isSelected ? '0 10px 15px -3px rgba(37, 99, 235, 0.1)' : '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
                                                     position: 'relative',
@@ -697,19 +733,36 @@ const CustomerOnboarding = () => {
                                                 {/* Header Section */}
                                                 <div style={{ padding: '1.25rem', borderBottom: '1px solid #f1f5f9', position: 'relative' }}>
                                                     {/* Badge */}
-                                                    <div style={{ 
-                                                        display: 'inline-flex', 
-                                                        alignItems: 'center', 
-                                                        padding: '0.25rem 0.75rem', 
-                                                        borderRadius: '9999px', 
-                                                        fontSize: '0.75rem', 
-                                                        fontWeight: 600,
-                                                        backgroundColor: isThirdParty ? '#fff7ed' : '#f0fdf4',
-                                                        color: isThirdParty ? '#c2410c' : '#15803d',
-                                                        border: `1px solid ${isThirdParty ? '#fdba74' : '#86efac'}`,
-                                                        marginBottom: '0.75rem'
-                                                    }}>
-                                                        {isThirdParty ? 'Third-Party' : 'In-House'}
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                        <div style={{ 
+                                                            display: 'inline-flex', 
+                                                            alignItems: 'center', 
+                                                            padding: '0.25rem 0.75rem', 
+                                                            borderRadius: '9999px', 
+                                                            fontSize: '0.75rem', 
+                                                            fontWeight: 600,
+                                                            backgroundColor: isThirdParty ? '#fff7ed' : '#f0fdf4',
+                                                            color: isThirdParty ? '#c2410c' : '#15803d',
+                                                            border: `1px solid ${isThirdParty ? '#fdba74' : '#86efac'}`,
+                                                            marginBottom: '0.75rem'
+                                                        }}>
+                                                            {isThirdParty ? 'Third-Party' : 'In-House'}
+                                                        </div>
+                                                        
+                                                        {/* Ineligible Badge */}
+                                                        {!isEligible && (
+                                                            <div style={{
+                                                                fontSize: '0.7rem',
+                                                                color: '#ef4444',
+                                                                fontWeight: 600,
+                                                                backgroundColor: '#fef2f2',
+                                                                padding: '4px 8px',
+                                                                borderRadius: '4px',
+                                                                border: '1px solid #fecaca'
+                                                            }}>
+                                                                Age mismatch ({policy.minAge}-{policy.maxAge} yrs)
+                                                            </div>
+                                                        )}
                                                     </div>
 
                                                     {/* Selection Checkmark */}
@@ -762,15 +815,20 @@ const CustomerOnboarding = () => {
                                                         <span style={{ color: '#64748b' }}>Policy Duration</span>
                                                         <span style={{ fontWeight: 600, color: '#0f172a' }}>{policy.tenureValue} {policy.tenureUnit}</span>
                                                     </div>
+                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.875rem' }}>
+                                                        <span style={{ color: '#64748b' }}>Min Age</span>
+                                                        <span style={{ fontWeight: 600, color: '#0f172a' }}>{policy.minAge} Years</span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         );
                                     })}
                                 </div>
-                            )}
-                        </div>
+                            );
+                        })()
                     )}
-
+                </div>
+            )}
                     {/* Step 5: Review & Submit */}
                     {currentStep === 5 && (
                         <div className="form-step">
