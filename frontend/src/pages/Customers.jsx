@@ -367,9 +367,13 @@ const Customers = () => {
                                         </td>
                                         <td>{customer.mobile || '-'}</td>
                                         <td>
-                                            <span className="badge-blue">0 Policies</span>
+                                            <span className="badge-blue">
+                                                {customer.selectedPolicy ? 1 : 0} Policies
+                                            </span>
                                         </td>
-                                        <td className="font-medium">$0</td>
+                                        <td className="font-medium">
+                                            ${customer.selectedPolicy?.premiumAmount ? customer.selectedPolicy.premiumAmount.toLocaleString() : '0'}
+                                        </td>
                                         <td>
                                             <span className={`badge-status ${customer.status}`}>
                                                 {capitalize(customer.status)}

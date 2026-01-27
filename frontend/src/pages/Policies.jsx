@@ -22,7 +22,9 @@ const Policies = () => {
     const [selectedType, setSelectedType] = useState(null);
     const [filters, setFilters] = useState({
         search: '',
-        status: 'All'
+        status: 'All',
+        source: 'All',
+        provider: 'All'
     });
 
     const [formData, setFormData] = useState({
@@ -444,7 +446,32 @@ const Policies = () => {
                     </div>
                     <select 
                         className="form-select"
-                        style={{ width: '180px', backgroundColor: 'white' }}
+                        style={{ width: '150px', backgroundColor: 'white' }}
+                        value={filters.source}
+                        onChange={(e) => setFilters({...filters, source: e.target.value, provider: 'All'})}
+                    >
+                        <option value="All">All Sources</option>
+                        <option value="IN_HOUSE">In-House</option>
+                        <option value="THIRD_PARTY">Third-Party</option>
+                    </select>
+
+                    {filters.source === 'THIRD_PARTY' && (
+                        <select 
+                            className="form-select"
+                            style={{ width: '180px', backgroundColor: 'white' }}
+                            value={filters.provider}
+                            onChange={(e) => setFilters({...filters, provider: e.target.value})}
+                        >
+                            <option value="All">All Providers</option>
+                            {providers.filter(p => p.status === 'active').map(p => (
+                                <option key={p._id} value={p._id}>{p.name}</option>
+                            ))}
+                        </select>
+                    )}
+
+                    <select 
+                        className="form-select"
+                        style={{ width: '150px', backgroundColor: 'white' }}
                         value={filters.status}
                         onChange={(e) => setFilters({...filters, status: e.target.value})}
                     >
@@ -454,7 +481,7 @@ const Policies = () => {
                     </select>
                     <button 
                         className="btn-outline" 
-                        onClick={() => setFilters({ search: '', status: 'All' })}
+                        onClick={() => setFilters({ search: '', status: 'All', source: 'All', provider: 'All' })}
                         style={{ height: '38px', backgroundColor: 'white' }}
                     >
                         Reset
@@ -549,6 +576,8 @@ const Policies = () => {
                                 {policies
                                     .filter(p => !selectedType || p.policyType?._id === selectedType)
                                     .filter(p => filters.status === 'All' || p.status === filters.status)
+                                    .filter(p => filters.source === 'All' || p.policySource === filters.source)
+                                    .filter(p => filters.provider === 'All' || p.provider?._id === filters.provider)
                                     .filter(p => {
                                         const search = filters.search.toLowerCase();
                                         return (
@@ -950,18 +979,20 @@ const Policies = () => {
                                         />
                                     </div>
                                     <div className="form-grid">
-                                        <div className="form-group">
-                                            <label className="form-label">Status</label>
-                                            <select 
-                                                className="form-select"
-                                                name="status"
-                                                value={formData.status}
-                                                onChange={handleInputChange}
-                                            >
-                                                <option value="active">Active</option>
-                                                <option value="inactive">Inactive</option>
-                                            </select>
-                                        </div>
+                                        {currentPolicy && (
+                                            <div className="form-group">
+                                                <label className="form-label">Status</label>
+                                                <select 
+                                                    className="form-select"
+                                                    name="status"
+                                                    value={formData.status}
+                                                    onChange={handleInputChange}
+                                                >
+                                                    <option value="active">Active</option>
+                                                    <option value="inactive">Inactive</option>
+                                                </select>
+                                            </div>
+                                        )}
                                         <div className="form-group">
                                             <label className="form-label" style={{ visibility: 'hidden' }}>Renewable</label>
                                             <div style={{ display: 'flex', alignItems: 'center', height: '38px' }}>

@@ -9,6 +9,11 @@ const CustomerOnboarding = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [documentModal, setDocumentModal] = useState({ isOpen: false, document: null });
     const [errors, setErrors] = useState({}); // Validation errors
+    const [policies, setPolicies] = useState([]);
+    const [policyTypes, setPolicyTypes] = useState([]);
+    const [selectedTypeFilter, setSelectedTypeFilter] = useState('');
+    const [loadingPolicies, setLoadingPolicies] = useState(false);
+    const [selectedPolicyDetails, setSelectedPolicyDetails] = useState(null);
 
     // Form data state
     const [formData, setFormData] = useState({
@@ -50,6 +55,45 @@ const CustomerOnboarding = () => {
         { number: 5, title: 'Review & Submit', key: 'review' }
     ];
 
+    React.useEffect(() => {
+        if (currentStep === 4) {
+            fetchPoliciesAndTypes();
+        }
+    }, [currentStep]);
+
+    const fetchPoliciesAndTypes = async () => {
+        setLoadingPolicies(true);
+        try {
+            const token = localStorage.getItem('token');
+            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+            
+            // Fetch Policies
+            const policiesRes = await fetch(`${API_BASE_URL}/policies`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const policiesData = await policiesRes.json();
+            
+            // Fetch Policy Types
+            const typesRes = await fetch(`${API_BASE_URL}/admin/policy-types`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const typesData = await typesRes.json();
+
+            if (policiesRes.ok && typesRes.ok) {
+                setPolicies(policiesData.data.filter(p => p.status === 'active'));
+                setPolicyTypes(typesData.data.filter(t => t.status === 'active'));
+            } else {
+                showErrorAlert('Failed to load policy data');
+            }
+        } catch (error) {
+            console.error("Error fetching data:", error);
+            showErrorAlert("Failed to fetch policy data");
+        } finally {
+            setLoadingPolicies(false);
+        }
+    };
+
+
     // Validation functions
     const validateStep1 = () => {
         return formData.firstName.trim() && 
@@ -87,7 +131,7 @@ const CustomerOnboarding = () => {
             case 1: return validateStep1();
             case 2: return validateStep2();
             case 3: return validateStep3();
-            case 4: return true; // Policy step is optional for now
+            case 4: return !!formData.selectedPolicy; // Policy step is no longer optional
             default: return false;
         }
     };
@@ -152,6 +196,11 @@ const CustomerOnboarding = () => {
                 [documentType]: documentData
             }
         }));
+    };
+
+    const handlePolicySelect = (policy) => {
+        setFormData(prev => ({ ...prev, selectedPolicy: policy._id }));
+        setSelectedPolicyDetails(policy);
     };
 
     const nextStep = () => {
@@ -583,13 +632,142 @@ const CustomerOnboarding = () => {
                     {currentStep === 4 && (
                         <div className="form-step">
                             <h2 className="step-title">Select Policy</h2>
-                            <div className="empty-state">
-                                <div className="empty-state-icon">📋</div>
-                                <h3 className="empty-state-title">No policies available at the moment</h3>
-                                <p className="empty-state-description">
-                                    Policy selection will be available once policies are configured in the system.
-                                </p>
+
+                            {/* Policy Type Filter */}
+                            <div className="policy-type-filter" style={{ marginBottom: '2rem' }}>
+                                <label className="form-label" style={{ marginBottom: '0.5rem', display: 'block' }}>
+                                    Filter by Policy Type <span style={{ color: '#ef4444' }}>*</span>
+                                </label>
+                                <select 
+                                    className="form-select"
+                                    value={selectedTypeFilter}
+                                    onChange={(e) => setSelectedTypeFilter(e.target.value)}
+                                >
+                                    <option value="">-- Select Policy Type --</option>
+                                    {policyTypes.map(type => (
+                                        <option key={type._id} value={type._id}>{type.name}</option>
+                                    ))}
+                                </select>
                             </div>
+
+                            {loadingPolicies ? (
+                                <div className="text-center p-8">Loading policies...</div>
+                            ) : !selectedTypeFilter ? (
+                                <div className="empty-state">
+                                    <div className="empty-state-icon" style={{ backgroundColor: '#f1f5f9', color: '#64748b' }}>🔍</div>
+                                    <h3 className="empty-state-title">Please select a policy type</h3>
+                                    <p className="empty-state-description">
+                                        Choose a policy type from the dropdown above to view available plans.
+                                    </p>
+                                </div>
+                            ) : policies.filter(p => p.policyType?._id === selectedTypeFilter).length === 0 ? (
+                                <div className="empty-state">
+                                    <div className="empty-state-icon">📋</div>
+                                    <h3 className="empty-state-title">No policies found</h3>
+                                    <p className="empty-state-description">
+                                        There are no active policies available for the selected type.
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="policies-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                                    {policies
+                                        .filter(p => p.policyType?._id === selectedTypeFilter)
+                                        .map(policy => {
+                                        const isSelected = formData.selectedPolicy === policy._id;
+                                        const isThirdParty = policy.policySource === 'THIRD_PARTY';
+                                        
+                                        return (
+                                            <div 
+                                                key={policy._id}
+                                                onClick={() => handlePolicySelect(policy)}
+                                                style={{
+                                                    border: isSelected ? '2px solid #2563eb' : '1px solid #e2e8f0',
+                                                    borderRadius: '12px',
+                                                    padding: '0',
+                                                    cursor: 'pointer',
+                                                    backgroundColor: isSelected ? '#eff6ff' : 'white',
+                                                    transition: 'all 0.2s ease',
+                                                    boxShadow: isSelected ? '0 10px 15px -3px rgba(37, 99, 235, 0.1)' : '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+                                                    position: 'relative',
+                                                    overflow: 'hidden',
+                                                    display: 'flex',
+                                                    flexDirection: 'column'
+                                                }}
+                                            >
+                                                {/* Header Section */}
+                                                <div style={{ padding: '1.25rem', borderBottom: '1px solid #f1f5f9', position: 'relative' }}>
+                                                    {/* Badge */}
+                                                    <div style={{ 
+                                                        display: 'inline-flex', 
+                                                        alignItems: 'center', 
+                                                        padding: '0.25rem 0.75rem', 
+                                                        borderRadius: '9999px', 
+                                                        fontSize: '0.75rem', 
+                                                        fontWeight: 600,
+                                                        backgroundColor: isThirdParty ? '#fff7ed' : '#f0fdf4',
+                                                        color: isThirdParty ? '#c2410c' : '#15803d',
+                                                        border: `1px solid ${isThirdParty ? '#fdba74' : '#86efac'}`,
+                                                        marginBottom: '0.75rem'
+                                                    }}>
+                                                        {isThirdParty ? 'Third-Party' : 'In-House'}
+                                                    </div>
+
+                                                    {/* Selection Checkmark */}
+                                                    {isSelected && (
+                                                        <div style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', color: '#2563eb' }}>
+                                                            <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4">
+                                                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                                                </svg>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.25rem', paddingRight: '2rem' }}>
+                                                        {policy.policyName}
+                                                    </h3>
+                                                    <div style={{ fontSize: '0.875rem', color: '#64748b' }}>
+                                                        {policy.policyType?.name} • {policy.planName}
+                                                    </div>
+                                                    
+                                                    {isThirdParty && policy.provider && (
+                                                        <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#475569' }}>
+                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                <path d="M3 21h18M5 21V7l8-4 8 4v14M8 21v-4h8v4" />
+                                                            </svg>
+                                                            <span style={{ fontWeight: 500 }}>{policy.provider.name}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Middle Section - Premium */}
+                                                <div style={{ padding: '1.25rem', backgroundColor: isSelected ? 'rgba(37, 99, 235, 0.03)' : 'transparent' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
+                                                        <span style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a' }}>
+                                                            ${policy.premiumAmount?.toLocaleString()}
+                                                        </span>
+                                                        <span style={{ fontSize: '0.875rem', color: '#64748b', fontWeight: 500 }}>
+                                                            / {policy.tenureValue} {policy.tenureUnit}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Bottom Section - Details */}
+                                                <div style={{ padding: '1.25rem', paddingTop: '0', display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: 'auto' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.875rem', borderTop: '1px solid #f1f5f9', paddingTop: '1rem' }}>
+                                                        <span style={{ color: '#64748b' }}>Coverage Limit</span>
+                                                        <span style={{ fontWeight: 600, color: '#0f172a' }}>${policy.coverageAmount?.toLocaleString()}</span>
+                                                    </div>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.875rem' }}>
+                                                        <span style={{ color: '#64748b' }}>Policy Duration</span>
+                                                        <span style={{ fontWeight: 600, color: '#0f172a' }}>{policy.tenureValue} {policy.tenureUnit}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -670,9 +848,19 @@ const CustomerOnboarding = () => {
                                 {/* Policy Review */}
                                 <div className="review-section">
                                     <h3 className="review-section-title">Selected Policy</h3>
-                                    <div className="review-item">
-                                        <span className="review-value">No policy selected</span>
-                                    </div>
+                                    {selectedPolicyDetails ? (
+                                        <div className="review-item" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '0.5rem' }}>
+                                            <div style={{ fontWeight: 600, color: '#0f172a' }}>{selectedPolicyDetails.policyName}</div>
+                                            <div style={{ fontSize: '0.875rem', color: '#64748b' }}>
+                                                Premium: <span style={{ fontWeight: 600 }}>${selectedPolicyDetails.premiumAmount}</span> • 
+                                                Coverage: <span style={{ fontWeight: 600 }}>${selectedPolicyDetails.coverageAmount}</span>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="review-item">
+                                            <span className="review-value" style={{ color: '#ef4444' }}>No policy selected</span>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* KYC Documents Review */}
@@ -699,7 +887,13 @@ const CustomerOnboarding = () => {
                     )}
 
                     {/* Navigation Buttons */}
-                    <div className="form-navigation">
+                    <div className="form-navigation" style={{ flexDirection: 'column', alignItems: 'flex-end' }}>
+                        {currentStep < 5 && !canProceedToNext() && (
+                            <div className="validation-warning" style={{ color: '#ef4444', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
+                                * All fields are required to proceed
+                            </div>
+                        )}
+                        <div style={{ display: 'flex', gap: '1rem', width: '100%', justifyContent: 'space-between' }}>
                         <button 
                             className="btn-secondary"
                             onClick={prevStep}
@@ -727,8 +921,9 @@ const CustomerOnboarding = () => {
                         )}
                     </div>
                 </div>
+            </div>
 
-                {/* Document Modal */}
+            {/* Document Modal */}
                 {documentModal.isOpen && documentModal.document && (
                     <div className="modal-overlay" onClick={closeDocumentModal}>
                         <div className="modal-content" onClick={(e) => e.stopPropagation()}>

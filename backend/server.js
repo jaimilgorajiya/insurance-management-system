@@ -38,6 +38,13 @@ app.use((req, res, next) => {
 });
 
 // Routes
+app.get("/", (req, res) => {
+    res.json({ message: "Insurance CRM API is running" });
+});
+
+app.get("/api", (req, res) => {
+    res.json({ message: "Insurance CRM API is running" });
+});
 app.use("/api/auth", authRoutes);  // Unified auth routes
 app.use("/api/users", userCreationRoutes);  // New user creation routes
 app.use("/api/admin", adminRoutes);
