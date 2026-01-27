@@ -1,7 +1,12 @@
 import { User } from "../models/user.models.js";
+import { Policy } from "../models/policy.models.js"; // Import Policy model
 import { comparePassword } from "@jaimilgorajiya/password-utils";
 import { generateTokenAndResponse } from "../utils/generateToken.js";
 import { createUser } from "../services/userService.js";
+import { generatePolicyPDF } from "../utils/pdfGenerator.js"; // Import PDF generator
+import { sendPolicyDocumentEmail } from "../services/emailService.js"; // Import Email service
+import path from "path";
+import fs from "fs";
 
 export const createCustomer = async (req, res) => {
     try {
@@ -104,33 +109,87 @@ export const updateCustomer = async (req, res) => {
         const { id } = req.params;
         const { name, email, mobile, status, kycStatus, selectedPolicy } = req.body;
         
+        // Find the customer first to get details for PDF if needed
+        const query = { _id: id, role: "customer" };
+        if (req.user.role === "customer") {
+            query.createdBy = req.user._id;
+        }
+        
+        let customer = await User.findOne(query);
+        if (!customer) return res.status(404).json({ message: "Customer not found or access denied" });
+
         const updateOperations = { $set: {} };
         if (name) updateOperations.$set.name = name;
         if (email) updateOperations.$set.email = email;
         if (mobile) updateOperations.$set.mobile = mobile;
         if (status) updateOperations.$set.status = status;
         if (kycStatus) updateOperations.$set.kycStatus = kycStatus;
+        
         if (selectedPolicy) {
             updateOperations.$set.selectedPolicy = selectedPolicy;
-            // Also add to purchased history
-            updateOperations.$push = { 
-                purchasedPolicies: {
-                    policy: selectedPolicy,
-                    purchaseDate: new Date(),
-                    status: 'active'
+            
+            // Logic to generate Policy Document
+            try {
+                const policy = await Policy.findById(selectedPolicy).populate('policyType').populate('provider');
+                if (policy) {
+                    const timestamp = Date.now();
+                    const fileName = `Policy_${id}_${selectedPolicy}_${timestamp}.pdf`;
+                    const uploadDir = path.join(process.cwd(), 'uploads', 'policy-documents');
+                    
+                    if (!fs.existsSync(uploadDir)) {
+                        fs.mkdirSync(uploadDir, { recursive: true });
+                    }
+                    
+                    const filePath = path.join(uploadDir, fileName);
+                    
+                    await generatePolicyPDF(policy, customer, filePath);
+                    
+                    const relativePath = path.join('uploads', 'policy-documents', fileName); // Path to save in DB
+
+                    // Add to purchased history with document path
+                    updateOperations.$push = { 
+                        purchasedPolicies: {
+                            policy: selectedPolicy,
+                            purchaseDate: new Date(),
+                            status: 'active',
+                            policyDocument: relativePath
+                        }
+                    };
+
+                    // Send Email
+                    await sendPolicyDocumentEmail({
+                        email: customer.email,
+                        name: customer.name,
+                        policyName: policy.policyName,
+                        pdfPath: filePath
+                    });
+
+                } else {
+                     // Fallback if policy not found (should not happen usually)
+                     updateOperations.$push = { 
+                        purchasedPolicies: {
+                            policy: selectedPolicy,
+                            purchaseDate: new Date(),
+                            status: 'active'
+                        }
+                    };
                 }
-            };
+            } catch (err) {
+                console.error("Error generating policy document:", err);
+                // Fallback to push without document if error
+                updateOperations.$push = { 
+                    purchasedPolicies: {
+                        policy: selectedPolicy,
+                        purchaseDate: new Date(),
+                        status: 'active'
+                    }
+                };
+            }
         }
 
-        const query = { _id: id, role: "customer" };
-        if (req.user.role === "customer") {
-            query.createdBy = req.user._id;
-        }
-
-        const customer = await User.findOneAndUpdate(query, updateOperations, { new: true }).select("-password");
-        if (!customer) return res.status(404).json({ message: "Customer not found or access denied" });
-
-        res.status(200).json({ message: "Customer updated successfully", customer });
+        const updatedCustomer = await User.findOneAndUpdate(query, updateOperations, { new: true }).select("-password");
+        
+        res.status(200).json({ message: "Customer updated successfully", customer: updatedCustomer });
     } catch (e) { res.status(500).json({ message: e.message }); }
 };
 

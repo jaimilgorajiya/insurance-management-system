@@ -306,6 +306,16 @@ const CustomerDetails = () => {
                                                 <div style={{ fontSize: '0.75rem', color: '#ef4444', fontWeight: 500, marginTop: '2px' }}>
                                                     Expires: {calculateExpiryDate(purchase.purchaseDate, policy.tenureValue, policy.tenureUnit)}
                                                 </div>
+                                                {purchase.policyDocument && (
+                                                    <a 
+                                                        href={`${API_BASE_URL.replace('/api', '')}/${purchase.policyDocument}`} 
+                                                        target="_blank" 
+                                                        rel="noopener noreferrer"
+                                                        style={{ display: 'inline-block', fontSize: '0.75rem', color: '#2563eb', marginTop: '4px', textDecoration: 'none', fontWeight: 500 }}
+                                                    >
+                                                        View Policy Document
+                                                    </a>
+                                                )}
                                             </div>
                                         </div>
 

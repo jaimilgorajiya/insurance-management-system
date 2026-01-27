@@ -43,6 +43,10 @@ const CustomerDocuments = () => {
     };
 
     const fetchDocPreview = async (doc) => {
+        if (doc.isStatic) {
+             const baseUrl = API_BASE_URL.replace(/\/api\/?$/, '');
+             return `${baseUrl}/${doc.staticUrl}`;
+        }
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`${API_BASE_URL}/customer-onboarding/document/${customerId}/${doc.docTypeKey}`, {
@@ -70,7 +74,7 @@ const CustomerDocuments = () => {
     };
 
     const handleCloseView = () => {
-        if (previewUrl) {
+        if (previewUrl && !selectedDoc?.isStatic) {
             window.URL.revokeObjectURL(previewUrl);
         }
         setPreviewUrl(null);
@@ -79,6 +83,18 @@ const CustomerDocuments = () => {
     };
 
     const handleDownload = async (doc) => {
+        if (doc.isStatic) {
+            const baseUrl = API_BASE_URL.replace(/\/api\/?$/, '');
+            const url = `${baseUrl}/${doc.staticUrl}`;
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = doc.filename.split('/').pop(); // Extract filename
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            return;
+        }
+
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`${API_BASE_URL}/customer-onboarding/document/${customerId}/${doc.docTypeKey}`, {
@@ -151,8 +167,8 @@ const CustomerDocuments = () => {
                                                 borderRadius: '6px', 
                                                 fontSize: '0.75rem', 
                                                 fontWeight: 600, 
-                                                backgroundColor: doc.docTypeKey === 'governmentId' ? '#eff6ff' : doc.docTypeKey === 'proofOfAddress' ? '#f0fdf4' : '#faf5ff',
-                                                color: doc.docTypeKey === 'governmentId' ? '#2563eb' : doc.docTypeKey === 'proofOfAddress' ? '#10b981' : '#9333ea'
+                                                backgroundColor: doc.docTypeKey === 'governmentId' ? '#eff6ff' : doc.docTypeKey === 'proofOfAddress' ? '#f0fdf4' : doc.docTypeKey === 'policy_document' ? '#fff7ed' : '#faf5ff',
+                                                color: doc.docTypeKey === 'governmentId' ? '#2563eb' : doc.docTypeKey === 'proofOfAddress' ? '#10b981' : doc.docTypeKey === 'policy_document' ? '#c2410c' : '#9333ea'
                                             }}>
                                                 {doc.docTypeName}
                                             </span>

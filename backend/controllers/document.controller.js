@@ -10,9 +10,10 @@ export const getCustomersWithDocuments = asyncHandler(async (req, res) => {
         $or: [
             { "kycDocuments.governmentId": { $exists: true } },
             { "kycDocuments.proofOfAddress": { $exists: true } },
-            { "kycDocuments.incomeProof": { $exists: true } }
+            { "kycDocuments.incomeProof": { $exists: true } },
+            { "purchasedPolicies.policyDocument": { $exists: true } }
         ]
-    }).select("firstName lastName name email kycDocuments");
+    }).select("firstName lastName name email kycDocuments purchasedPolicies");
 
     const result = customers.map(customer => {
         let docCount = 0;
@@ -31,6 +32,18 @@ export const getCustomersWithDocuments = asyncHandler(async (req, res) => {
         trackDoc(docs.governmentId);
         trackDoc(docs.proofOfAddress);
         trackDoc(docs.incomeProof);
+
+        // Track Policy Documents
+        if (customer.purchasedPolicies && customer.purchasedPolicies.length > 0) {
+            customer.purchasedPolicies.forEach(p => {
+                if (p.policyDocument) {
+                    docCount++;
+                    if (!lastUpload || new Date(p.purchaseDate) > new Date(lastUpload)) {
+                        lastUpload = p.purchaseDate;
+                    }
+                }
+            });
+        }
 
         return {
             _id: customer._id,
@@ -53,7 +66,9 @@ export const getCustomersWithDocuments = asyncHandler(async (req, res) => {
 // Lists all documents for a specific customer
 export const getCustomerDocuments = asyncHandler(async (req, res) => {
     const { customerId } = req.params;
-    const customer = await User.findById(customerId).select("firstName lastName name email kycDocuments");
+    const customer = await User.findById(customerId)
+        .select("firstName lastName name email kycDocuments purchasedPolicies")
+        .populate("purchasedPolicies.policy", "policyName");
 
     if (!customer) {
         return res.status(404).json(new ApiResponse(404, null, "Customer not found"));
@@ -95,6 +110,25 @@ export const getCustomerDocuments = asyncHandler(async (req, res) => {
             fileType: docs.incomeProof.fileType || docs.incomeProof.filename.split('.').pop(),
             uploadDate: docs.incomeProof.uploadDate,
             filename: docs.incomeProof.filename
+        });
+    }
+
+    // Add Policy Documents
+    if (customer.purchasedPolicies && customer.purchasedPolicies.length > 0) {
+        customer.purchasedPolicies.forEach((p, index) => {
+            if (p.policyDocument) {
+                documents.push({
+                    _id: `${customer._id}_policy_${index}`,
+                    docName: p.policy ? `Policy: ${p.policy.policyName}` : 'Policy Document',
+                    docTypeName: 'Policy Document',
+                    docTypeKey: 'policy_document',
+                    fileType: 'pdf',
+                    uploadDate: p.purchaseDate,
+                    filename: p.policyDocument,
+                    isStatic: true,
+                    staticUrl: p.policyDocument
+                });
+            }
         });
     }
 

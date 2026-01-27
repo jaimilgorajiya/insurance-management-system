@@ -128,6 +128,9 @@ const userSchema = new mongoose.Schema({
             type: String,
             enum: ["active", "expired", "cancelled"],
             default: "active"
+        },
+        policyDocument: {  // Path to the generated PDF
+            type: String
         }
     }],
     password: {

@@ -37,6 +37,9 @@ app.use((req, res, next) => {
     next();
 });
 
+// Serve static files from uploads directory
+app.use('/uploads', express.static('uploads'));
+
 // Routes
 app.get("/", (req, res) => {
     res.json({ message: "Insurance CRM API is running" });

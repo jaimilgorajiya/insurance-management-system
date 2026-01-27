@@ -66,6 +66,60 @@ export const sendCredentialsEmail = async (emailData) => {
 };
 
 /**
+ * Send policy document to customer
+ * @param {Object} emailData 
+ * @param {string} emailData.email 
+ * @param {string} emailData.name
+ * @param {string} emailData.policyName
+ * @param {string} emailData.pdfPath - Path to the PDF attachment
+ */
+export const sendPolicyDocumentEmail = async (emailData) => {
+    try {
+        const { email, name, policyName, pdfPath } = emailData;
+        const transporter = createTransporter();
+        const appName = "Insurance CRM";
+
+        const mailOptions = {
+            from: `"${appName}" <${process.env.SMTP_USER}>`,
+            to: email,
+            subject: `Policy Document - ${policyName} - ${appName}`,
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    <div style="background-color: #2563eb; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+                        <h1>${appName}</h1>
+                    </div>
+                    <div style="padding: 20px;">
+                        <h2>Hello ${name},</h2>
+                        <p>Thank you for purchasing <strong>${policyName}</strong>.</p>
+                        <p>Please find your policy document attached to this email. We recommend keeping a copy for your records.</p>
+                        <br>
+                        <p>If you have any questions, please contact our support team.</p>
+                    </div>
+                    <div style="text-align: center; font-size: 12px; color: #64748b; margin-top: 20px;">
+                        <p>&copy; ${new Date().getFullYear()} ${appName}. All rights reserved.</p>
+                    </div>
+                </div>
+            `,
+            attachments: [
+                {
+                    filename: `Policy-${policyName.replace(/\s+/g, '-')}.pdf`,
+                    path: pdfPath
+                }
+            ]
+        };
+
+        const info = await transporter.sendMail(mailOptions);
+        console.log(`✅ Policy document email sent to ${email} (Message ID: ${info.messageId})`);
+        return { success: true, messageId: info.messageId };
+    } catch (error) {
+        console.error("❌ Email sending error:", error.message);
+        // Don't throw here to avoid failing the whole request if email fails, 
+        // just log it. The policy is still bought.
+        return { success: false, error: error.message };
+    }
+};
+
+/**
  * Generate HTML email template
  * @param {Object} data - Template data
  * @returns {string} HTML email content
