@@ -22,6 +22,10 @@ const AgentPermissions = () => {
         policies: {
             view: false
         },
+        kyc: {
+            approve: false,
+            reject: false
+        },
         claims: {
             create: false,
             view: false,
@@ -98,7 +102,8 @@ const AgentPermissions = () => {
     const modules = [
         { id: 'customers', name: 'Customer Management', actions: ['create', 'view', 'edit', 'delete'] },
         { id: 'policies', name: 'Policy Management', actions: ['view'] },
-        { id: 'claims', name: 'Claims Management', actions: ['create', 'view', 'edit', 'delete'] }
+        { id: 'kyc', name: 'KYC Verification', actions: ['approve', 'reject'] },
+        // { id: 'claims', name: 'Claims Management', actions: ['create', 'view', 'edit', 'delete'] }
     ];
 
     if (loading) return <Layout><div className="center-screen">Loading...</div></Layout>;
@@ -131,8 +136,8 @@ const AgentPermissions = () => {
                         <thead>
                             <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                                 <th style={{ padding: '1.25rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, color: '#475569' }}>Feature Module</th>
-                                <th style={{ padding: '1.25rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, color: '#475569', textAlign: 'center' }}>Create</th>
-                                <th style={{ padding: '1.25rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, color: '#475569', textAlign: 'center' }}>View</th>
+                                <th style={{ padding: '1.25rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, color: '#475569', textAlign: 'center' }}>Create / Approve</th>
+                                <th style={{ padding: '1.25rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, color: '#475569', textAlign: 'center' }}>View / Reject</th>
                                 <th style={{ padding: '1.25rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, color: '#475569', textAlign: 'center' }}>Edit</th>
                                 <th style={{ padding: '1.25rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, color: '#475569', textAlign: 'center' }}>Delete</th>
                             </tr>
@@ -144,27 +149,41 @@ const AgentPermissions = () => {
                                         <div style={{ fontWeight: 600, color: '#0f172a' }}>{module.name}</div>
                                         <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Permissions for {module.id} module</div>
                                     </td>
-                                    {['create', 'view', 'edit', 'delete'].map((action) => (
-                                        <td key={action} style={{ padding: '1.25rem 1.5rem', textAlign: 'center' }}>
-                                            {module.actions.includes(action) ? (
-                                                <div style={{ display: 'flex', justifyContent: 'center' }}>
-                                                    <input 
-                                                        type="checkbox" 
-                                                        checked={permissions[module.id]?.[action] || false}
-                                                        onChange={() => handleCheckboxChange(module.id, action)}
-                                                        style={{ 
-                                                            width: '1.25rem', 
-                                                            height: '1.25rem', 
-                                                            cursor: 'pointer',
-                                                            accentColor: '#0f766e'
-                                                        }}
-                                                    />
-                                                </div>
-                                            ) : (
-                                                <span style={{ color: '#e2e8f0' }}>—</span>
-                                            )}
-                                        </td>
-                                    ))}
+                                    {['create_or_approve', 'view_or_reject', 'edit', 'delete'].map((actionCol) => {
+                                        let action = actionCol;
+                                        if (module.id === 'kyc') {
+                                            if (actionCol === 'create_or_approve') action = 'approve';
+                                            if (actionCol === 'view_or_reject') action = 'reject';
+                                        } else {
+                                            if (actionCol === 'create_or_approve') action = 'create';
+                                            if (actionCol === 'view_or_reject') action = 'view';
+                                        }
+
+                                        return (
+                                            <td key={actionCol} style={{ padding: '1.25rem 1.5rem', textAlign: 'center' }}>
+                                                {module.actions.includes(action) ? (
+                                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                                                        <input 
+                                                            type="checkbox" 
+                                                            checked={permissions[module.id]?.[action] || false}
+                                                            onChange={() => handleCheckboxChange(module.id, action)}
+                                                            style={{ 
+                                                                width: '1.25rem', 
+                                                                height: '1.25rem', 
+                                                                cursor: 'pointer',
+                                                                accentColor: '#0f766e'
+                                                            }}
+                                                        />
+                                                        {module.id === 'kyc' && (
+                                                            <span style={{ fontSize: '0.65rem', color: '#64748b', textTransform: 'capitalize' }}>{action}</span>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <span style={{ color: '#e2e8f0' }}>—</span>
+                                                )}
+                                            </td>
+                                        );
+                                    })}
                                 </tr>
                             ))}
                         </tbody>

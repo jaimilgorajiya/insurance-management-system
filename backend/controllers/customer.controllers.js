@@ -123,11 +123,40 @@ export const updateCustomer = async (req, res) => {
         if (!customer) return res.status(404).json({ message: "Customer not found or access denied" });
 
         const updateOperations = { $set: {} };
+        const userPermissions = req.user.permissions;
+
+        // Fields that require 'customers.edit' permission for agents
+        const requiresEditPermission = name || email || mobile || status || selectedPolicy;
+        
+        if (req.user.role === 'agent' && requiresEditPermission && !userPermissions?.customers?.edit) {
+            return res.status(403).json({
+                success: false,
+                message: "You do not have permission to edit customer details."
+            });
+        }
+
         if (name) updateOperations.$set.name = name;
         if (email) updateOperations.$set.email = email;
         if (mobile) updateOperations.$set.mobile = mobile;
         if (status) updateOperations.$set.status = status;
-        if (kycStatus) updateOperations.$set.kycStatus = kycStatus;
+        
+        if (kycStatus) {
+            if (req.user.role === 'agent') {
+                if (kycStatus === 'approved' && (!userPermissions?.kyc?.approve)) {
+                    return res.status(403).json({
+                        success: false,
+                        message: "You do not have permission to approve KYC."
+                    });
+                }
+                if (kycStatus === 'rejected' && (!userPermissions?.kyc?.reject)) {
+                    return res.status(403).json({
+                        success: false,
+                        message: "You do not have permission to reject KYC."
+                    });
+                }
+            }
+            updateOperations.$set.kycStatus = kycStatus;
+        }
         
         if (selectedPolicy) {
             // Fetch policy for validation
@@ -169,7 +198,7 @@ export const updateCustomer = async (req, res) => {
                     
                     await generatePolicyPDF(policy, customer, filePath);
                     
-                    const relativePath = path.join('uploads', 'policy-documents', fileName); // Path to save in DB
+                    const relativePath = `uploads/policy-documents/${fileName}`;
 
                     // Add to purchased history with document path
                     updateOperations.$push = { 

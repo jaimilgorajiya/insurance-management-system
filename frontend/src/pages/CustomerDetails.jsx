@@ -176,8 +176,8 @@ const CustomerDetails = () => {
                             KYC: {capitalize(customer.kycStatus)}
                         </span>
                         
-                        {(localStorage.getItem('userRole') === 'admin' || (localStorage.getItem('userRole') === 'agent' && hasPermission('customers', 'edit'))) && (
-                            <div style={{ display: 'flex', gap: '0.5rem', marginLeft: '1rem' }}>
+                        <div style={{ display: 'flex', gap: '0.5rem', marginLeft: '1rem' }}>
+                            {(localStorage.getItem('userRole') === 'admin' || hasPermission('kyc', 'approve')) && (
                                 <button 
                                     className="btn-primary"
                                     style={{ backgroundColor: '#10b981', opacity: customer.kycStatus === 'approved' ? 0.5 : 1, cursor: customer.kycStatus === 'approved' ? 'not-allowed' : 'pointer' }}
@@ -186,6 +186,8 @@ const CustomerDetails = () => {
                                 >
                                     Approve KYC
                                 </button>
+                            )}
+                            {(localStorage.getItem('userRole') === 'admin' || hasPermission('kyc', 'reject')) && (
                                 <button 
                                     className="btn-primary"
                                     style={{ backgroundColor: '#ef4444', opacity: customer.kycStatus === 'rejected' ? 0.5 : 1, cursor: customer.kycStatus === 'rejected' ? 'not-allowed' : 'pointer' }}
@@ -194,8 +196,8 @@ const CustomerDetails = () => {
                                 >
                                     Reject KYC
                                 </button>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -396,7 +398,24 @@ const CustomerDetails = () => {
                                 }}>
                                     {customer.selectedPolicy.policySource === 'THIRD_PARTY' ? 'Third-Party' : 'In-House'}
                                 </div>
-                                {/* Legacy doesn't store purchase date usually, but if it does, show it. Assuming today if missing or hidden. */}
+                                 <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                                        Purchased: {customer.onboardingCompletedAt ? new Date(customer.onboardingCompletedAt).toLocaleDateString() : 'N/A'}
+                                    </div>
+                                    <div style={{ fontSize: '0.75rem', color: '#ef4444', fontWeight: 500, marginTop: '2px' }}>
+                                        Expires: {calculateExpiryDate(customer.onboardingCompletedAt, customer.selectedPolicy.tenureValue, customer.selectedPolicy.tenureUnit)}
+                                    </div>
+                                    {customer.policyDocument && (
+                                        <a 
+                                            href={`${API_BASE_URL.replace('/api', '')}/${customer.policyDocument}`} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            style={{ display: 'inline-block', fontSize: '0.75rem', color: '#2563eb', marginTop: '4px', textDecoration: 'none', fontWeight: 500 }}
+                                        >
+                                            View Policy Document
+                                        </a>
+                                    )}
+                                 </div>
                              </div>
 
                             <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.5rem' }}>
@@ -431,6 +450,11 @@ const CustomerDetails = () => {
                                         <div style={{ fontWeight: 600, color: '#0f172a' }}>
                                             {customer.selectedPolicy.provider.name}
                                         </div>
+                                    </div>
+                                )}
+                                {customer.onboardingCompleted && (
+                                    <div style={{ gridColumn: 'span 2', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#10b981', fontSize: '0.875rem', fontWeight: 600 }}>
+                                        <span style={{ fontSize: '1.25rem' }}>✓</span> Onboarding & Policy Generation Complete
                                     </div>
                                 )}
                             </div>

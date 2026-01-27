@@ -161,44 +161,46 @@ const PolicyDetails = () => {
                         </div>
                     </div>
 
-                    {/* Commission Structure */}
-                    <div className="review-section">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
-                            <Briefcase className="text-primary" size={24} />
-                            <h3 className="review-section-title" style={{ marginBottom: 0 }}>Commission Structure</h3>
-                        </div>
-                        <div className="review-grid">
-                            <div className="review-item">
-                                <span className="review-label">Agent Commission</span>
-                                <span className="review-value" style={{ color: '#ea580c', fontWeight: 700, fontSize: '1.25rem' }}>
-                                    {policy.agentCommission || 0}%
-                                    <span style={{ fontSize: '0.875rem', color: '#64748b', marginLeft: '8px', fontWeight: 500 }}>
-                                        (${((policy.agentCommission || 0) * policy.premiumAmount / 100).toLocaleString()})
-                                    </span>
-                                </span>
+                    {/* Commission Structure - Admin Only */}
+                    {localStorage.getItem('userRole') === 'admin' && (
+                        <div className="review-section">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
+                                <Briefcase className="text-primary" size={24} />
+                                <h3 className="review-section-title" style={{ marginBottom: 0 }}>Commission Structure</h3>
                             </div>
-                            {policy.policySource === 'THIRD_PARTY' && (
-                                <>
-                                    <div className="review-item">
-                                        <span className="review-label">Company Commission</span>
-                                        <span className="review-value">
-                                            {policy.companyCommission?.type === 'PERCENTAGE' 
-                                                ? `${policy.companyCommission.value}%`
-                                                : `$${policy.companyCommission?.value}`}
+                            <div className="review-grid">
+                                <div className="review-item">
+                                    <span className="review-label">Agent Commission</span>
+                                    <span className="review-value" style={{ color: '#ea580c', fontWeight: 700, fontSize: '1.25rem' }}>
+                                        {policy.agentCommission || 0}%
+                                        <span style={{ fontSize: '0.875rem', color: '#64748b', marginLeft: '8px', fontWeight: 500 }}>
+                                            (${((policy.agentCommission || 0) * policy.premiumAmount / 100).toLocaleString()})
                                         </span>
-                                    </div>
-                                    <div className="review-item">
-                                        <span className="review-label">Additional Commission</span>
-                                        <span className="review-value">
-                                            {policy.adminCommission?.type === 'PERCENTAGE' 
-                                                ? `${policy.adminCommission.value}%`
-                                                : `$${policy.adminCommission?.value}`}
-                                        </span>
-                                    </div>
-                                </>
-                            )}
+                                    </span>
+                                </div>
+                                {policy.policySource === 'THIRD_PARTY' && (
+                                    <>
+                                        <div className="review-item">
+                                            <span className="review-label">Company Commission</span>
+                                            <span className="review-value">
+                                                {policy.companyCommission?.type === 'PERCENTAGE' 
+                                                    ? `${policy.companyCommission.value}%`
+                                                    : `$${policy.companyCommission?.value}`}
+                                            </span>
+                                        </div>
+                                        <div className="review-item">
+                                            <span className="review-label">Additional Commission</span>
+                                            <span className="review-value">
+                                                {policy.adminCommission?.type === 'PERCENTAGE' 
+                                                    ? `${policy.adminCommission.value}%`
+                                                    : `$${policy.adminCommission?.value}`}
+                                            </span>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* Tenure & Eligibility */}
                     <div className="review-section">

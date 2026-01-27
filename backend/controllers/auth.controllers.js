@@ -58,7 +58,8 @@ export const login = async (req, res) => {
                     email: user.email,
                     name: user.name,
                     role: user.role,
-                    status: user.status
+                    status: user.status,
+                    permissions: user.permissions
                 },
                 accessToken: tokenResponse.accessToken
             }

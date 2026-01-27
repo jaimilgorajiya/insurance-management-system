@@ -16,7 +16,7 @@ router.post("/register", createCustomer);
 
 // --- CUSTOMER MANAGEMENT (Admin/Agent Access) ---
 router.get("/all", verifyJWT, authorizeRoles("admin", "agent"), checkPermission("customers", "view"), getCustomers);
-router.put("/update/:id", verifyJWT, authorizeRoles("admin", "agent"), checkPermission("customers", "edit"), updateCustomer);
+router.put("/update/:id", verifyJWT, authorizeRoles("admin", "agent"), updateCustomer);
 router.delete("/delete/:id", verifyJWT, authorizeRoles("admin", "agent"), checkPermission("customers", "delete"), deleteCustomer);
 
 // --- SUB-CUSTOMER MANAGEMENT (Customer Access) ---

@@ -327,7 +327,7 @@ const Agents = () => {
                                     <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', color: '#64748b' }}>COMMISSION (MTD)</th>
                                     <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', color: '#64748b' }}>TARGET PROGRESS</th>
                                     <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', color: '#64748b' }}>STATUS</th>
-                                    <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', color: '#64748b', textAlign: 'right' }}>ACTIONS</th>
+                                    <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', color: '#64748b', textAlign: 'center' }}>ACTIONS</th>
                                 </tr>
                             </thead>
                             <tbody>

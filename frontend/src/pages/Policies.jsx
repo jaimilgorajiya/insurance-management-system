@@ -26,7 +26,7 @@ const Policies = () => {
 
     const [filters, setFilters] = useState({
         search: '',
-        status: 'All',
+        status: localStorage.getItem('userRole') === 'agent' ? 'active' : 'All',
         source: 'All',
         provider: 'All'
     });
@@ -457,15 +457,19 @@ const Policies = () => {
                         </div>
                     ) : (
                         <div style={{ display: 'flex', gap: '1rem' }}>
-                            <button className="btn-outline" onClick={() => navigate('/admin/policy-types')} style={{ backgroundColor: 'white' }}>
-                                Policy Types
-                            </button>
-                            <button className="btn-outline" onClick={() => navigate('/admin/providers')} style={{ backgroundColor: 'white' }}>
-                                Providers
-                            </button>
-                            <button className="btn-primary" onClick={() => handleOpenModal()}>
-                                + Add Policy
-                            </button>
+                            {localStorage.getItem('userRole') === 'admin' && (
+                                <>
+                                    <button className="btn-outline" onClick={() => navigate('/admin/policy-types')} style={{ backgroundColor: 'white' }}>
+                                        Policy Types
+                                    </button>
+                                    <button className="btn-outline" onClick={() => navigate('/admin/providers')} style={{ backgroundColor: 'white' }}>
+                                        Providers
+                                    </button>
+                                    <button className="btn-primary" onClick={() => handleOpenModal()}>
+                                        + Add Policy
+                                    </button>
+                                </>
+                            )}
                         </div>
                     )}
                 </div>
@@ -546,7 +550,12 @@ const Policies = () => {
                     </select>
                     <button 
                         className="btn-outline" 
-                        onClick={() => setFilters({ search: '', status: 'All', source: 'All', provider: 'All' })}
+                        onClick={() => setFilters({ 
+                            search: '', 
+                            status: localStorage.getItem('userRole') === 'agent' ? 'active' : 'All', 
+                            source: 'All', 
+                            provider: 'All' 
+                        })}
                         style={{ height: '38px', backgroundColor: 'white' }}
                     >
                         Reset
@@ -699,11 +708,12 @@ const Policies = () => {
                                             </td>
                                             <td>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                                    <label className="switch">
+                                                    <label className="switch" style={{ opacity: localStorage.getItem('userRole') === 'admin' ? 1 : 0.6, cursor: localStorage.getItem('userRole') === 'admin' ? 'pointer' : 'not-allowed' }}>
                                                         <input 
                                                             type="checkbox" 
                                                             checked={policy.status === 'active'}
-                                                            onChange={() => handleToggleStatus(policy._id, policy.status)}
+                                                            onChange={() => localStorage.getItem('userRole') === 'admin' && handleToggleStatus(policy._id, policy.status)}
+                                                            disabled={localStorage.getItem('userRole') !== 'admin'}
                                                         />
                                                         <span className="slider-round"></span>
                                                     </label>
@@ -738,22 +748,26 @@ const Policies = () => {
                                                             >
                                                                 <Eye size={18} strokeWidth={2} />
                                                             </button>
-                                                            <button 
-                                                                onClick={() => handleOpenModal(policy)}
-                                                                className="action-btn edit"
-                                                                title="Edit"
-                                                                style={{ color: '#64748b' }}
-                                                            >
-                                                                <SquarePen size={18} strokeWidth={2} />
-                                                            </button>
-                                                            <button 
-                                                                onClick={() => handleDeletePolicy(policy._id)}
-                                                                className="action-btn delete"
-                                                                title="Delete"
-                                                                style={{ color: '#ef4444' }}
-                                                            >
-                                                                <Trash2 size={18} strokeWidth={2} />
-                                                            </button>
+                                                            {localStorage.getItem('userRole') === 'admin' && (
+                                                                <>
+                                                                    <button 
+                                                                        onClick={() => handleOpenModal(policy)}
+                                                                        className="action-btn edit"
+                                                                        title="Edit"
+                                                                        style={{ color: '#64748b' }}
+                                                                    >
+                                                                        <SquarePen size={18} strokeWidth={2} />
+                                                                    </button>
+                                                                    <button 
+                                                                        onClick={() => handleDeletePolicy(policy._id)}
+                                                                        className="action-btn delete"
+                                                                        title="Delete"
+                                                                        style={{ color: '#ef4444' }}
+                                                                    >
+                                                                        <Trash2 size={18} strokeWidth={2} />
+                                                                    </button>
+                                                                </>
+                                                            )}
                                                         </>
                                                     )}
                                                 </div>

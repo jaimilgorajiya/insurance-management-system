@@ -51,8 +51,13 @@ function App() {
           <Route path="/admin/customers/:customerId/buy-policy" element={<BuyPolicy />} />
         </Route>
 
-        <Route element={<ProtectedRoute allowedRoles={['admin', 'agent']} />}>
+        {/* <Route element={<ProtectedRoute allowedRoles={['admin', 'agent']} />}>
           <Route path="/admin/claims" element={<ClaimsPlaceholder />} />
+        </Route> */}
+
+        <Route element={<ProtectedRoute allowedRoles={['admin', 'agent']} module="policies" action="view" />}>
+          <Route path="/admin/policies" element={<Policies />} />
+          <Route path="/admin/policies/:id" element={<PolicyDetails />} />
         </Route>
 
         {/* Admin Only Routes */}
@@ -64,9 +69,7 @@ function App() {
           <Route path="/admin/agents/permissions/:id" element={<AgentPermissions />} />
           <Route path="/admin/agents/:id" element={<AgentDetails />} />
           <Route path="/admin/policy-types" element={<PolicyTypes />} />
-          <Route path="/admin/policies" element={<Policies />} />
           <Route path="/admin/providers" element={<Providers />} />
-          <Route path="/admin/policies/:id" element={<PolicyDetails />} />
           <Route path="/admin/documents" element={<Documents />} />
           <Route path="/admin/reports" element={<ReportsPlaceholder />} />
         </Route>

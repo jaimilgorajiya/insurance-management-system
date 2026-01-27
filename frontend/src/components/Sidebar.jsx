@@ -18,11 +18,11 @@ const Sidebar = ({ collapsed, toggleSidebar }) => {
 
   const adminMenuItems = [
     { label: 'Dashboard', icon: <DashboardIcon />, path: '/admin/dashboard' },
-    { label: 'Users & Roles', icon: <UsersIcon />, path: '/admin/users' },
+    // { label: 'Users & Roles', icon: <UsersIcon />, path: '/admin/users' },
     { label: 'Customers', icon: <CustomersIcon />, path: '/admin/customers' },
     { label: 'Policies', icon: <PoliciesIcon />, path: '/admin/policies' },
     { label: 'Agents', icon: <AgentsIcon />, path: '/admin/agents' },
-    { label: 'Claims', icon: <ClaimsIcon />, path: '/admin/claims' },
+    // { label: 'Claims', icon: <ClaimsIcon />, path: '/admin/claims' },
     { label: 'Documents', icon: <DocumentsIcon />, path: '/admin/documents' },
     { label: 'Notifications', icon: <NotificationsIcon />, path: '/admin/notifications' },
     { label: 'Reports', icon: <ReportsIcon />, path: '/admin/reports' },
@@ -31,7 +31,8 @@ const Sidebar = ({ collapsed, toggleSidebar }) => {
   const agentMenuItems = [
     { label: 'Dashboard', icon: <DashboardIcon />, path: '/agent/dashboard' },
     { label: 'My Customers', icon: <CustomersIcon />, path: '/admin/customers' },
-    { label: 'Claims', icon: <ClaimsIcon />, path: '/admin/claims' },
+    { label: 'Policies', icon: <PoliciesIcon />, path: '/admin/policies' },
+    // { label: 'Claims', icon: <ClaimsIcon />, path: '/admin/claims' },
     { label: 'Commission', icon: <CommissionIcon />, path: '/agent/commission' },
   ];
 
@@ -39,6 +40,7 @@ const Sidebar = ({ collapsed, toggleSidebar }) => {
     ? adminMenuItems 
     : agentMenuItems.filter(item => {
         if (item.label === 'My Customers') return hasPermission('customers', 'view');
+        if (item.label === 'Policies') return hasPermission('policies', 'view');
         if (item.label === 'Claims') return hasPermission('claims', 'view');
         // Add other checks as permissions expand
         return true;

@@ -37,7 +37,6 @@ router.get("/document/:customerId/:documentType",
 router.patch("/document-status/:customerId/:documentType", 
     verifyJWT, 
     authorizeRoles("admin", "agent"),
-    checkPermission("customers", "edit"),
     updateKYCDocumentStatus
 );
 

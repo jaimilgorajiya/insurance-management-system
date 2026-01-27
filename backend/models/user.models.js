@@ -183,6 +183,10 @@ const userSchema = new mongoose.Schema({
         policies: {
             view: { type: Boolean, default: true }
         },
+        kyc: {
+            approve: { type: Boolean, default: false },
+            reject: { type: Boolean, default: false }
+        },
         claims: {
             create: { type: Boolean, default: true },
             view: { type: Boolean, default: true },

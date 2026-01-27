@@ -1,7 +1,8 @@
 import { User } from "../models/user.models.js";
 import { Policy } from "../models/policy.models.js";
 import { hashPassword } from "@jaimilgorajiya/password-utils";
-import { sendCredentialsEmail } from "../services/emailService.js";
+import { sendCredentialsEmail, sendPolicyDocumentEmail } from "../services/emailService.js";
+import { generatePolicyPDF } from "../utils/pdfGenerator.js";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -211,6 +212,56 @@ export const onboardCustomer = async (req, res) => {
             assignedAgentId: req.user.role === 'agent' ? req.user._id : null
         });
 
+        // Officially "Purchase" the policy if selected
+        if (selectedPolicy) {
+            try {
+                const policy = await Policy.findById(selectedPolicy).populate('policyType').populate('provider');
+                if (policy) {
+                    const timestamp = Date.now();
+                    const fileName = `Policy_${newCustomer._id}_${selectedPolicy}_${timestamp}.pdf`;
+                    const uploadDir = path.join(process.cwd(), 'uploads', 'policy-documents');
+                    
+                    if (!fs.existsSync(uploadDir)) {
+                        fs.mkdirSync(uploadDir, { recursive: true });
+                    }
+                    
+                    const filePath = path.join(uploadDir, fileName);
+                    
+                    await generatePolicyPDF(policy, newCustomer, filePath);
+                    
+                    const relativePath = `uploads/policy-documents/${fileName}`;
+
+                    newCustomer.purchasedPolicies.push({
+                        policy: selectedPolicy,
+                        purchaseDate: new Date(),
+                        status: 'active',
+                        policyDocument: relativePath,
+                        agentId: req.user.role === 'agent' ? req.user._id : null
+                    });
+
+                    // Send Policy Email
+                    try {
+                        await sendPolicyDocumentEmail({
+                            email: email,
+                            name: `${firstName} ${lastName}`,
+                            policyName: policy.policyName,
+                            pdfPath: filePath
+                        });
+                    } catch (emailError) {
+                        console.error("Failed to send policy email:", emailError);
+                    }
+                }
+            } catch (pdfError) {
+                console.error("Policy PDF generation failed during onboarding:", pdfError);
+                // Still add to purchased but without document
+                newCustomer.purchasedPolicies.push({
+                    policy: selectedPolicy,
+                    purchaseDate: new Date(),
+                    status: 'active'
+                });
+            }
+        }
+
         await newCustomer.save();
 
         // Send welcome email with credentials
@@ -370,11 +421,28 @@ export const updateKYCDocumentStatus = async (req, res) => {
             });
         }
 
-        if (req.user.role === 'agent' && customerToUpdate.assignedAgentId?.toString() !== req.user._id.toString()) {
-            return res.status(403).json({
-                success: false,
-                message: "You do not have permission to access this data."
-            });
+        if (req.user.role === 'agent') {
+            if (customerToUpdate.assignedAgentId?.toString() !== req.user._id.toString()) {
+                return res.status(403).json({
+                    success: false,
+                    message: "You do not have permission to access this data."
+                });
+            }
+
+            // Check granular KYC permissions
+            const userPermissions = req.user.permissions;
+            if (status === 'approved' && (!userPermissions?.kyc?.approve)) {
+                return res.status(403).json({
+                    success: false,
+                    message: "You do not have permission to approve KYC documents."
+                });
+            }
+            if (status === 'rejected' && (!userPermissions?.kyc?.reject)) {
+                return res.status(403).json({
+                    success: false,
+                    message: "You do not have permission to reject KYC documents."
+                });
+            }
         }
 
         // Update document status
