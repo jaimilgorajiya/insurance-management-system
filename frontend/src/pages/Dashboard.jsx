@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import { showWarningAlert } from '../utils/swalUtils';
 
@@ -30,6 +31,37 @@ export const AdminDashboard = () => {
 
 export const AgentDashboard = () => {
     const navigate = useNavigate();
+    const [stats, setStats] = useState({
+        totalCustomers: 0,
+        policiesSold: 0,
+        pendingVerifications: 0,
+        commissionMTD: 0
+    });
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+    useEffect(() => {
+        fetchStats();
+    }, []);
+
+    const fetchStats = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_BASE_URL}/agent/stats`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (res.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    setStats(data.stats);
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching agent stats:", error);
+        }
+    };
     
     return (
         <Layout>
@@ -43,22 +75,22 @@ export const AgentDashboard = () => {
                 <div className="stats-grid" style={{ marginBottom: '2rem' }}>
                      <div className="stat-card">
                         <div className="stat-label">My Customers</div>
-                        <div className="stat-value">0</div>
+                        <div className="stat-value">{stats.totalCustomers}</div>
                         <div className="stat-trend neutral">Start adding customers</div>
                     </div>
                     <div className="stat-card">
                         <div className="stat-label">Policies Sold</div>
-                        <div className="stat-value">0</div>
+                        <div className="stat-value">{stats.policiesSold}</div>
                         <div className="stat-trend neutral">No active policies</div>
                     </div>
                     <div className="stat-card">
                         <div className="stat-label">Pending Verifications</div>
-                        <div className="stat-value">0</div>
+                        <div className="stat-value">{stats.pendingVerifications}</div>
                         <div className="stat-trend positive">All caught up</div>
                     </div>
                      <div className="stat-card">
                         <div className="stat-label">Commission (MTD)</div>
-                        <div className="stat-value">$0.00</div>
+                        <div className="stat-value">${stats.commissionMTD.toFixed(2)}</div>
                         <div className="stat-trend neutral">No earnings yet</div>
                     </div>
                 </div>

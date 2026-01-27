@@ -3,13 +3,23 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
+import { User } from "../models/user.models.js";
+
 // Helper to ensure default roles exist
 const ensureRoleExists = async (roleName) => {
     let role = await Role.findOne({ name: roleName });
     if (!role) {
+        // Default structure matching User model
+        const defaultPermissions = {
+            customers: { create: true, view: true, edit: true, delete: false },
+            policies: { view: true },
+            kyc: { approve: false, reject: false },
+            claims: { create: true, view: true, edit: false, delete: false }
+        };
+        
         role = await Role.create({ 
             name: roleName, 
-            permissions: [], 
+            permissions: defaultPermissions, 
             description: `Default ${roleName} role` 
         });
     }
@@ -19,7 +29,6 @@ const ensureRoleExists = async (roleName) => {
 export const getRolePermissions = asyncHandler(async (req, res) => {
     const { roleName } = req.params;
     
-    // Ensure the role document exists so frontend always gets a valid response
     const role = await ensureRoleExists(roleName);
 
     return res.status(200).json(
@@ -31,18 +40,20 @@ export const updateRolePermissions = asyncHandler(async (req, res) => {
     const { roleName } = req.params;
     const { permissions } = req.body;
 
-    if (!Array.isArray(permissions)) {
-        throw new ApiError(400, "Permissions must be an array of strings");
-    }
-
     const role = await Role.findOneAndUpdate(
         { name: roleName },
         { permissions: permissions },
-        { new: true, upsert: true } // Upsert just in case, though get should handle it
+        { new: true, upsert: true }
+    );
+
+    // Propagate changes to all users with this role
+    await User.updateMany(
+        { role: roleName },
+        { $set: { permissions: permissions } }
     );
 
     return res.status(200).json(
-        new ApiResponse(200, role, "Permissions updated successfully")
+        new ApiResponse(200, role, "Permissions updated globally for all " + roleName + "s")
     );
 });
 

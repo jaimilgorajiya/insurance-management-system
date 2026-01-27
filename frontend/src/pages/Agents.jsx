@@ -285,6 +285,13 @@ const Agents = () => {
                     </div>
                     <div className="header-actions">
                         <button 
+                            className="btn-outline" 
+                            onClick={() => navigate('/admin/agents/permissions')}
+                            style={{ marginRight: '1rem', borderColor: '#cbd5e1', color: '#475569' }}
+                        >
+                            <ShieldIcon /> Manage Permissions
+                        </button>
+                        <button 
                             className="btn-primary" 
                             onClick={() => navigate('/admin/agents/create')}
                             style={{ backgroundColor: '#2563eb' }}
@@ -376,14 +383,6 @@ const Agents = () => {
                                                         style={{ color: '#2563eb', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: '0.25rem', border: 'none', background: 'none', cursor: 'pointer' }}
                                                     >
                                                         <EyeIcon />
-                                                    </button>
-                                                    <button 
-                                                        className="action-btn edit" 
-                                                        title="Permissions"
-                                                        onClick={() => navigate(`/admin/agents/permissions/${agent._id}`)}
-                                                        style={{ color: '#8b5cf6', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', border: 'none', background: 'none', cursor: 'pointer' }}
-                                                    >
-                                                        <ShieldIcon />
                                                     </button>
                                                     <button 
                                                         className="action-btn edit" 

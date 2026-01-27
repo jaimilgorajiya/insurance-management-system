@@ -21,6 +21,7 @@ import { ClaimsPlaceholder, ReportsPlaceholder } from './pages/Placeholders';
 import AccessDenied from './pages/AccessDenied';
 import AgentCommission from './pages/AgentCommission';
 import AgentPermissions from './pages/AgentPermissions';
+import Profile from './pages/Profile';
 
 function App() {
   return (
@@ -34,6 +35,11 @@ function App() {
 
         {/* Access Denied Route */}
         <Route path="/access-denied" element={<AccessDenied />} />
+
+        {/* Profile Route (Accessible to all authenticated users) */}
+        <Route element={<ProtectedRoute allowedRoles={['admin', 'agent', 'customer']} />}>
+          <Route path="/profile" element={<Profile />} />
+        </Route>
 
         {/* Protected Routes - Common for Admin and Agent */}
         <Route element={<ProtectedRoute allowedRoles={['admin', 'agent']} module="customers" action="view" />}>
@@ -66,7 +72,7 @@ function App() {
           <Route path="/admin/agents" element={<Agents />} />
           <Route path="/admin/agents/create" element={<EditAgent />} />
           <Route path="/admin/agents/edit/:id" element={<EditAgent />} />
-          <Route path="/admin/agents/permissions/:id" element={<AgentPermissions />} />
+          <Route path="/admin/agents/permissions" element={<AgentPermissions />} />
           <Route path="/admin/agents/:id" element={<AgentDetails />} />
           <Route path="/admin/policy-types" element={<PolicyTypes />} />
           <Route path="/admin/providers" element={<Providers />} />

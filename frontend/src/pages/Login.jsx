@@ -99,6 +99,9 @@ export default function Login() {
         localStorage.setItem('token', accessToken);
         localStorage.setItem('userRole', user.role);
         localStorage.setItem('userPermissions', JSON.stringify(user.permissions || {}));
+        localStorage.setItem('userName', user.name);
+        localStorage.setItem('userId', user._id);
+        localStorage.setItem('userEmail', user.email);
 
         // Handle Remember Me
         if (rememberMe) {

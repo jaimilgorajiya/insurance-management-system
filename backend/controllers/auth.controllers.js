@@ -111,14 +111,7 @@ export const getMe = async (req, res) => {
 
         return res.status(200).json({
             success: true,
-            user: {
-                id: user._id,
-                email: user.email,
-                name: user.name,
-                role: user.role,
-                status: user.status,
-                permissions: user.permissions
-            }
+            user
         });
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message });

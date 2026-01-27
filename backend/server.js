@@ -8,7 +8,7 @@ import adminRoutes from "./routes/admin.routes.js";
 import agentRoutes from "./routes/agent.routes.js";
 import customerRoutes from "./routes/customer.routes.js";
 import customerOnboardingRoutes from "./routes/customerOnboarding.routes.js";
-// import roleRoutes from "./routes/role.routes.js";
+import roleRoutes from "./routes/role.routes.js";
 import policyTypeRoutes from "./routes/policyType.routes.js";
 import policyRoutes from "./routes/policy.routes.js";
 import providerRoutes from "./routes/provider.routes.js";
@@ -54,7 +54,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/agent", agentRoutes);
 app.use("/api/customer", customerRoutes);
 app.use("/api/customer-onboarding", customerOnboardingRoutes);  // Customer onboarding routes
-// app.use("/api/roles", roleRoutes); // Role management routes
+app.use("/api/roles", roleRoutes); // Role management routes
 app.use("/api/admin/policy-types", policyTypeRoutes);
 app.use("/api/policies", policyRoutes);
 app.use("/api/providers", providerRoutes);

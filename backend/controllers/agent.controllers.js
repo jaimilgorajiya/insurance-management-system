@@ -171,3 +171,65 @@ export const getMyCommissions = async (req, res) => {
         res.status(500).json({ success: false, message: e.message });
     }
 };
+
+export const getAgentDashboardStats = async (req, res) => {
+    try {
+        const agentId = req.user._id;
+
+        // 1. My Customers
+        const totalCustomers = await User.countDocuments({ 
+            role: 'customer', 
+            assignedAgentId: agentId 
+        });
+
+        // 2. Pending Verifications
+        const pendingVerifications = await User.countDocuments({ 
+            role: 'customer', 
+            assignedAgentId: agentId,
+            kycStatus: "pending"
+        });
+
+        // 3. Policies Sold & Commission (MTD)
+        const customersWithPolicies = await User.find({
+            "purchasedPolicies.agentId": agentId
+        }).populate("purchasedPolicies.policy");
+
+        let policiesSold = 0;
+        let commissionMTD = 0;
+        
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        customersWithPolicies.forEach(customer => {
+            customer.purchasedPolicies.forEach(purchase => {
+                // Check if sold by this agent
+                if (purchase.agentId?.toString() === agentId.toString()) {
+                    policiesSold++;
+
+                    // Check if purchased this month
+                    const purchaseDate = new Date(purchase.purchaseDate);
+                    if (purchaseDate >= startOfMonth) {
+                        const commissionPercent = purchase.policy?.agentCommission || 0;
+                        const premium = purchase.policy?.premiumAmount || 0;
+                        const earned = (commissionPercent / 100) * premium;
+                        commissionMTD += earned;
+                    }
+                }
+            });
+        });
+
+        res.status(200).json({
+            success: true,
+            stats: {
+                totalCustomers,
+                policiesSold,
+                pendingVerifications,
+                commissionMTD
+            }
+        });
+
+    } catch (error) {
+        console.error("Error fetching agent dashboard stats:", error);
+        res.status(500).json({ success: false, message: "Failed to fetch dashboard stats" });
+    }
+};

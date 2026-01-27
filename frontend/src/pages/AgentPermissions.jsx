@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { showSuccessAlert, showErrorAlert } from '../utils/swalUtils';
 
 const AgentPermissions = () => {
-    const { id } = useParams();
     const navigate = useNavigate();
-    const [agent, setAgent] = useState(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -35,30 +33,27 @@ const AgentPermissions = () => {
     });
 
     useEffect(() => {
-        fetchAgentDetails();
-    }, [id]);
+        fetchGlobalPermissions();
+    }, []);
 
-    const fetchAgentDetails = async () => {
+    const fetchGlobalPermissions = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`${API_BASE_URL}/agent/all`, {
+            const res = await fetch(`${API_BASE_URL}/roles/agent`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
-            const foundAgent = data.agents?.find(a => a._id === id);
             
-            if (foundAgent) {
-                setAgent(foundAgent);
-                if (foundAgent.permissions) {
-                    setPermissions(foundAgent.permissions);
+            if (data.success && data.data) {
+                if (data.data.permissions) {
+                    setPermissions(data.data.permissions);
                 }
             } else {
-                showErrorAlert('Agent not found');
-                navigate('/admin/agents');
+                showErrorAlert('Failed to load global permissions');
             }
         } catch (error) {
             console.error(error);
-            showErrorAlert('Error fetching agent details');
+            showErrorAlert('Error fetching permissions');
         } finally {
             setLoading(false);
         }
@@ -78,8 +73,8 @@ const AgentPermissions = () => {
         setSaving(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`${API_BASE_URL}/agent/permissions/${id}`, {
-                method: 'PATCH',
+            const res = await fetch(`${API_BASE_URL}/roles/agent`, {
+                method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
@@ -89,7 +84,7 @@ const AgentPermissions = () => {
 
             if (!res.ok) throw new Error('Failed to update permissions');
 
-            showSuccessAlert('Permissions updated successfully');
+            showSuccessAlert('Global permissions updated successfully');
             navigate('/admin/agents');
         } catch (error) {
             console.error(error);
@@ -116,8 +111,8 @@ const AgentPermissions = () => {
                         <button onClick={() => navigate('/admin/agents')} className="btn-outline" style={{ border: 'none', padding: 0, marginBottom: '1rem', color: '#64748b' }}>
                             ← Back to Agents
                         </button>
-                        <h1 className="page-title">Permission Matrix: {agent?.name}</h1>
-                        <p className="page-subtitle">Configure granular access levels for this agent</p>
+                        <h1 className="page-title">Global Agent Permission Matrix</h1>
+                        <p className="page-subtitle">Configure default permissions for all agents</p>
                     </div>
                     <div className="header-actions">
                         <button 

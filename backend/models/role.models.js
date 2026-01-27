@@ -9,8 +9,25 @@ const roleSchema = new mongoose.Schema({
         lowercase: true
     },
     permissions: {
-        type: [String], // Array of permission strings e.g. "customer.create"
-        default: []
+        customers: {
+            create: { type: Boolean, default: true },
+            view: { type: Boolean, default: true },
+            edit: { type: Boolean, default: true },
+            delete: { type: Boolean, default: false }
+        },
+        policies: {
+            view: { type: Boolean, default: true }
+        },
+        kyc: {
+            approve: { type: Boolean, default: false },
+            reject: { type: Boolean, default: false }
+        },
+        claims: {
+            create: { type: Boolean, default: true },
+            view: { type: Boolean, default: true },
+            edit: { type: Boolean, default: false },
+            delete: { type: Boolean, default: false }
+        }
     },
     description: {
         type: String,
