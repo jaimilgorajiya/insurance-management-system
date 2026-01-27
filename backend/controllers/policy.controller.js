@@ -8,6 +8,7 @@ export const getPolicies = asyncHandler(async (req, res) => {
     // Populate policyType name
     const policies = await Policy.find({})
         .populate("policyType", "name status")
+        .populate("provider", "name")
         .sort({ createdAt: -1 });
 
     // Filter out policies that belong to an inactive category
@@ -24,7 +25,9 @@ export const getPolicies = asyncHandler(async (req, res) => {
 export const getPolicyById = asyncHandler(async (req, res) => {
     const { id } = req.params;
 
-    const policy = await Policy.findById(id).populate("policyType", "name badgeColor");
+    const policy = await Policy.findById(id)
+        .populate("policyType", "name badgeColor")
+        .populate("provider", "name contactEmail");
 
     if (!policy) {
         throw new ApiError(404, "Policy not found");
@@ -88,7 +91,12 @@ export const createPolicy = asyncHandler(async (req, res) => {
         minAge,
         maxAge,
         renewable,
-        status
+        status,
+        agentCommission,
+        policySource,
+        provider,
+        companyCommission,
+        adminCommission
     } = req.body;
 
     if (!policyName || !policyType || !planName || !premiumAmount || !coverageAmount || !tenureValue || !tenureUnit) {
@@ -98,6 +106,10 @@ export const createPolicy = asyncHandler(async (req, res) => {
     // Guardrails
     if (Number(premiumAmount) <= 0) {
         throw new ApiError(400, "Premium Amount must be greater than 0");
+    }
+
+    if (agentCommission !== undefined && (Number(agentCommission) < 0 || Number(agentCommission) > 100)) {
+        throw new ApiError(400, "Agent Commission must be between 0% and 100%");
     }
 
     if (Number(coverageAmount) <= Number(premiumAmount)) {
@@ -119,12 +131,18 @@ export const createPolicy = asyncHandler(async (req, res) => {
         description,
         premiumAmount,
         coverageAmount,
+        agentCommission: agentCommission || 0,
         tenureValue,
         tenureUnit,
         minAge,
         maxAge,
         renewable,
+        renewable,
         status: status || "active",
+        policySource: policySource || "IN_HOUSE",
+        provider: policySource === "THIRD_PARTY" ? provider : undefined,
+        companyCommission: policySource === "THIRD_PARTY" ? companyCommission : undefined,
+        adminCommission: policySource === "THIRD_PARTY" ? adminCommission : undefined,
         createdBy: req.user?._id
     });
 
@@ -143,11 +161,15 @@ export const updatePolicy = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Policy not found");
     }
 
-    const { premiumAmount, coverageAmount, minAge, maxAge, tenureValue } = updateData;
+    const { premiumAmount, coverageAmount, minAge, maxAge, tenureValue, agentCommission, companyCommission, adminCommission, policySource, provider } = updateData;
 
     // Guardrails for update
     if (premiumAmount !== undefined && Number(premiumAmount) <= 0) {
         throw new ApiError(400, "Premium Amount must be greater than 0");
+    }
+
+    if (agentCommission !== undefined && (Number(agentCommission) < 0 || Number(agentCommission) > 100)) {
+        throw new ApiError(400, "Agent Commission must be between 0% and 100%");
     }
 
     const finalPremium = premiumAmount !== undefined ? premiumAmount : policy.premiumAmount;

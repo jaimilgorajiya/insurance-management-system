@@ -11,6 +11,7 @@ import customerOnboardingRoutes from "./routes/customerOnboarding.routes.js";
 // import roleRoutes from "./routes/role.routes.js";
 import policyTypeRoutes from "./routes/policyType.routes.js";
 import policyRoutes from "./routes/policy.routes.js";
+import providerRoutes from "./routes/provider.routes.js";
 import documentRoutes from "./routes/document.routes.js";
 import { verifyJWT } from "./middlewares/auth.middleware.js";
 import connectDB from "./db/db.js";
@@ -46,6 +47,7 @@ app.use("/api/customer-onboarding", customerOnboardingRoutes);  // Customer onbo
 // app.use("/api/roles", roleRoutes); // Role management routes
 app.use("/api/admin/policy-types", policyTypeRoutes);
 app.use("/api/policies", policyRoutes);
+app.use("/api/providers", providerRoutes);
 app.use("/api/documents", documentRoutes);
 
 // Shared endpoints

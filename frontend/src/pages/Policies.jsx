@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { showSuccessAlert, showErrorAlert, showWarningAlert, showConfirmAction, showConfirmDelete } from '../utils/swalUtils';
-import { Eye, SquarePen, Trash2, Shield, Heart, Home, Car, Plane, Briefcase, Umbrella, Activity } from 'lucide-react';
+import { Eye, SquarePen, Trash2, Shield, Heart, Home, Car, Plane, Briefcase, Umbrella, Activity, Building, BriefcaseBusiness, ChevronDown, ChevronUp } from 'lucide-react';
+// import ProvidersModal from '../components/ProvidersModal';
 
 const Policies = () => {
     const navigate = useNavigate();
@@ -11,7 +12,11 @@ const Policies = () => {
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    // const [isProvidersModalOpen, setIsProvidersModalOpen] = useState(false);
+    const [isProvidersModalOpen, setIsProvidersModalOpen] = useState(false);
+    const [providers, setProviders] = useState([]);
     const [currentPolicy, setCurrentPolicy] = useState(null);
+    const [isCommissionOpen, setIsCommissionOpen] = useState(false);
     const [isViewOnly, setIsViewOnly] = useState(false);
     const [policyStats, setPolicyStats] = useState([]);
     const [selectedType, setSelectedType] = useState(null);
@@ -26,13 +31,21 @@ const Policies = () => {
         planName: '',
         description: '',
         premiumAmount: '',
+        agentCommission: '',
         coverageAmount: '',
         tenureValue: '',
         tenureUnit: '',
         minAge: 18,
         maxAge: 70,
         renewable: true,
-        status: 'active'
+        renewable: true,
+        status: 'active',
+        policySource: 'IN_HOUSE',
+        provider: '',
+        companyCommissionValue: '',
+        companyCommissionType: 'PERCENTAGE',
+        adminCommissionValue: '',
+        adminCommissionType: 'PERCENTAGE'
     });
 
     const [formErrors, setFormErrors] = useState({});
@@ -42,8 +55,24 @@ const Policies = () => {
     useEffect(() => {
         fetchPolicies();
         fetchPolicyTypes();
+        fetchPolicies();
+        fetchPolicyTypes();
+        fetchProviders();
         fetchPolicyStats();
     }, []);
+
+    const fetchProviders = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_BASE_URL}/providers`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (res.ok) setProviders(data.data);
+        } catch (error) {
+            console.error("Error fetching providers");
+        }
+    };
 
     const fetchPolicyStats = async () => {
         try {
@@ -102,14 +131,22 @@ const Policies = () => {
                 planName: policy.planName,
                 description: policy.description || '',
                 premiumAmount: policy.premiumAmount,
+                agentCommission: policy.agentCommission || 0,
                 coverageAmount: policy.coverageAmount,
                 tenureValue: policy.tenureValue,
                 tenureUnit: policy.tenureUnit || '',
                 minAge: policy.minAge,
                 maxAge: policy.maxAge,
                 renewable: policy.renewable,
-                status: policy.status
+                status: policy.status,
+                policySource: policy.policySource || 'IN_HOUSE',
+                provider: policy.provider?._id || '',
+                companyCommissionValue: policy.companyCommission?.value || '',
+                companyCommissionType: policy.companyCommission?.type || 'PERCENTAGE',
+                adminCommissionValue: policy.adminCommission?.value || '',
+                adminCommissionType: policy.adminCommission?.type || 'PERCENTAGE'
             });
+            setIsCommissionOpen(false); // Default closed in edit potentially, or keep user preference? User requested default closed.
         } else {
             setCurrentPolicy(null);
             setFormData({
@@ -118,14 +155,23 @@ const Policies = () => {
                 planName: '',
                 description: '',
                 premiumAmount: '',
+                agentCommission: '',
                 coverageAmount: '',
                 tenureValue: '',
                 tenureUnit: '',
                 minAge: 18,
                 maxAge: 70,
                 renewable: true,
-                status: 'active'
+                renewable: true,
+                status: 'active',
+                policySource: 'IN_HOUSE',
+                provider: '',
+                companyCommissionValue: '',
+                companyCommissionType: 'PERCENTAGE',
+                adminCommissionValue: '',
+                adminCommissionType: 'PERCENTAGE'
             });
+            setIsCommissionOpen(false); // Default closed in new
         }
         setFormErrors({});
         setIsModalOpen(true);
@@ -150,6 +196,12 @@ const Policies = () => {
         if (name === 'tenureValue') {
             if (Number(value) <= 0) {
                 error = 'Tenure must be at least 1';
+            }
+        }
+
+        if (name === 'agentCommission') {
+            if (Number(value) < 0 || Number(value) > 100) {
+                error = 'Commission must be between 0% and 100%';
             }
         }
 
@@ -207,13 +259,31 @@ const Policies = () => {
                 : `${API_BASE_URL}/policies`;
             const method = currentPolicy ? 'PUT' : 'POST';
 
+            // map flat form fields back to nested structure if needed, or backend handles it?
+            // Backend expects flat mostly but let's see. 
+            // My backend controller expects: companyCommission: { value, type } but I'm sending flat values from state?
+            // Actually the controller destructs `companyCommission` which is an object.
+            // So I need to structure the payload.
+            
+            const payload = {
+                ...formData,
+                companyCommission: {
+                    value: formData.companyCommissionValue || 0,
+                    type: formData.companyCommissionType
+                },
+                adminCommission: {
+                    value: formData.adminCommissionValue || 0,
+                    type: formData.adminCommissionType
+                }
+            };
+
             const res = await fetch(url, {
                 method,
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify(formData)
+                body: JSON.stringify(payload)
             });
             const data = await res.json();
 
@@ -322,7 +392,10 @@ const Policies = () => {
                     </div>
                     <div style={{ display: 'flex', gap: '1rem' }}>
                         <button className="btn-outline" onClick={() => navigate('/admin/policy-types')} style={{ backgroundColor: 'white' }}>
-                            Manage Policy Types
+                            Policy Types
+                        </button>
+                        <button className="btn-outline" onClick={() => navigate('/admin/providers')} style={{ backgroundColor: 'white' }}>
+                            Providers
                         </button>
                         <button className="btn-primary" onClick={() => handleOpenModal()}>
                             + Add Policy
@@ -489,8 +562,22 @@ const Policies = () => {
                                     return (
                                         <tr key={policy._id}>
                                             <td style={{ fontWeight: 600 }}>
-                                                {policy.policyName}
-                                                <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 400 }}>{policy.planName}</div>
+                                                <div>{policy.policyName}</div>
+                                                <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 400, display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+                                                    {policy.policySource === 'THIRD_PARTY' ? (
+                                                        <>
+                                                            <span style={{ backgroundColor: '#fef3c7', color: '#d97706', padding: '1px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 600 }}>3rd Party</span>
+                                                            <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                                                <Building size={10} />
+                                                                {policy.provider?.name || 'Unknown Provider'}
+                                                            </span>
+                                                        </>
+                                                    ) : (
+                                                        <span style={{ color: '#94a3b8' }}>In-House</span>
+                                                    )}
+                                                    <span>•</span>
+                                                    {policy.planName}
+                                                </div>
                                             </td>
                                             <td>
                                                 {policy.policyType ? (
@@ -511,6 +598,7 @@ const Policies = () => {
                                                 ) : '-'}
                                             </td>
                                             <td className="font-medium">${policy.premiumAmount?.toLocaleString()}</td>
+                                           
                                             <td className="font-medium">${policy.coverageAmount?.toLocaleString()}</td>
                                             <td style={{ fontSize: '0.8125rem', color: '#475569', fontWeight: 600 }}>
                                                 {policy.tenureValue} {policy.tenureUnit}
@@ -591,126 +679,265 @@ const Policies = () => {
                             </div>
                             <form onSubmit={isViewOnly ? (e) => e.preventDefault() : handleSubmit} className="modal-body">
                                 <fieldset disabled={isViewOnly} style={{ border: 'none', padding: 0, margin: 0 }}>
+                                    
+                                    {/* Source Selection */}
+                                    <div style={{ marginBottom: '1.5rem', backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
+                                        <label className="form-label" style={{ marginBottom: '0.75rem' }}>Policy Source</label>
+                                        <div style={{ display: 'flex', gap: '1.5rem' }}>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                                <input 
+                                                    type="radio" 
+                                                    name="policySource" 
+                                                    value="IN_HOUSE"
+                                                    checked={formData.policySource === 'IN_HOUSE'}
+                                                    onChange={handleInputChange}
+                                                />
+                                                <span style={{ fontWeight: 500 }}>In-House Policy</span>
+                                            </label>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                                <input 
+                                                    type="radio" 
+                                                    name="policySource" 
+                                                    value="THIRD_PARTY"
+                                                    checked={formData.policySource === 'THIRD_PARTY'}
+                                                    onChange={handleInputChange}
+                                                />
+                                                <span style={{ fontWeight: 500 }}>Third-Party Policy</span>
+                                            </label>
+                                        </div>
+                                    
+                                        {formData.policySource === 'THIRD_PARTY' && (
+                                            <div className="form-group" style={{ marginTop: '1rem', marginBottom: 0 }}>
+                                                <label className="form-label">Insurance Company (Provider)</label>
+                                                <select 
+                                                    className="form-select"
+                                                    name="provider"
+                                                    value={formData.provider}
+                                                    onChange={handleInputChange}
+                                                    required={formData.policySource === 'THIRD_PARTY'}
+                                                >
+                                                    <option value="">Select Provider</option>
+                                                    {providers.map(p => (
+                                                        <option key={p._id} value={p._id}>{p.name}</option>
+                                                    ))}
+                                                </select>
+                                                {providers.length === 0 && <div className="form-helper" style={{ color: '#ea580c' }}>No providers found. Please add one first from "Providers" button.</div>}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Section 2: Core Policy Details */}
+                                    <h4 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#1e293b', marginTop: '1.5rem', marginBottom: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem' }}>
+                                        Policy Details
+                                    </h4>
                                     <div className="form-grid">
-                                    <div className="form-group form-group-full">
-                                        <label className="form-label">Policy Name</label>
-                                        <input 
-                                            type="text" 
-                                            className="form-input" 
-                                            name="policyName"
-                                            value={formData.policyName}
-                                            onChange={handleInputChange}
-                                            placeholder="e.g. Comprehensive Term Life"
-                                            required
-                                        />
+                                        <div className="form-group form-group-full">
+                                            <label className="form-label">Policy Name</label>
+                                            <input 
+                                                type="text" 
+                                                className="form-input" 
+                                                name="policyName"
+                                                value={formData.policyName}
+                                                onChange={handleInputChange}
+                                                placeholder="e.g. Comprehensive Term Life"
+                                                required
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label">Policy Type</label>
+                                            <select 
+                                                className="form-select"
+                                                name="policyType"
+                                                value={formData.policyType}
+                                                onChange={handleInputChange}
+                                                required
+                                            >
+                                                <option value="">Select Category</option>
+                                                {policyTypes.map(type => (
+                                                    <option key={type._id} value={type._id}>{type.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label">Plan Name</label>
+                                            <input 
+                                                type="text" 
+                                                className="form-input" 
+                                                name="planName"
+                                                value={formData.planName}
+                                                onChange={handleInputChange}
+                                                placeholder="e.g. Gold Plan"
+                                                required
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label">Premium Amount ($)</label>
+                                            <input 
+                                                type="number" 
+                                                className={`form-input ${formErrors.premiumAmount ? 'border-error' : ''}`}
+                                                name="premiumAmount"
+                                                value={formData.premiumAmount}
+                                                onChange={handleInputChange}
+                                                required
+                                                min="0"
+                                            />
+                                            {formErrors.premiumAmount && <div style={{ color: '#ef4444', fontSize: '0.7rem', marginTop: '4px' }}>{formErrors.premiumAmount}</div>}
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label">Coverage Amount ($)</label>
+                                            <input 
+                                                type="number" 
+                                                className={`form-input ${formErrors.coverageAmount ? 'border-error' : ''}`}
+                                                name="coverageAmount"
+                                                value={formData.coverageAmount}
+                                                onChange={handleInputChange}
+                                                required
+                                                min="0"
+                                            />
+                                            {formErrors.coverageAmount && <div style={{ color: '#ef4444', fontSize: '0.7rem', marginTop: '4px' }}>{formErrors.coverageAmount}</div>}
+                                        </div>
                                     </div>
-                                    <div className="form-group">
-                                        <label className="form-label">Policy Type</label>
-                                        <select 
-                                            className="form-select"
-                                            name="policyType"
-                                            value={formData.policyType}
-                                            onChange={handleInputChange}
-                                            required
+
+                                    {/* Section 3: Eligibility & Duration */}
+                                    <h4 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#1e293b', marginTop: '1.5rem', marginBottom: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem' }}>
+                                        Eligibility & Duration
+                                    </h4>
+                                    <div className="form-grid">
+                                        <div className="form-group">
+                                            <label className="form-label">Tenure Value</label>
+                                            <input 
+                                                type="number" 
+                                                className={`form-input ${formErrors.tenureValue ? 'border-error' : ''}`}
+                                                name="tenureValue"
+                                                value={formData.tenureValue}
+                                                onChange={handleInputChange}
+                                                required
+                                                min="1"
+                                                placeholder="e.g. 1"
+                                            />
+                                            {formErrors.tenureValue && <div style={{ color: '#ef4444', fontSize: '0.7rem', marginTop: '4px' }}>{formErrors.tenureValue}</div>}
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label">Tenure Unit</label>
+                                            <select 
+                                                className="form-select"
+                                                name="tenureUnit"
+                                                value={formData.tenureUnit}
+                                                onChange={handleInputChange}
+                                                required
+                                            >
+                                                <option value="" disabled>Select Unit</option>
+                                                <option value="days">Days</option>
+                                                <option value="months">Months</option>
+                                                <option value="years">Years</option>
+                                            </select>
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label">Min Age</label>
+                                            <input 
+                                                type="number" 
+                                                className={`form-input ${formErrors.minAge ? 'border-error' : ''}`}
+                                                name="minAge"
+                                                value={formData.minAge}
+                                                onChange={handleInputChange}
+                                                required
+                                            />
+                                            {formErrors.minAge && <div style={{ color: '#ef4444', fontSize: '0.7rem', marginTop: '4px' }}>{formErrors.minAge}</div>}
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label">Max Age</label>
+                                            <input 
+                                                type="number" 
+                                                className={`form-input ${formErrors.maxAge ? 'border-error' : ''}`}
+                                                name="maxAge"
+                                                value={formData.maxAge}
+                                                onChange={handleInputChange}
+                                                required
+                                            />
+                                            {formErrors.maxAge && <div style={{ color: '#ef4444', fontSize: '0.7rem', marginTop: '4px' }}>{formErrors.maxAge}</div>}
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Section 4: Commission Details (Collapsible) */}
+                                    <div style={{ marginTop: '1.5rem', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+                                        <div 
+                                            onClick={() => setIsCommissionOpen(!isCommissionOpen)}
+                                            style={{ 
+                                                padding: '1rem', 
+                                                backgroundColor: '#f8fafc', 
+                                                cursor: 'pointer', 
+                                                display: 'flex', 
+                                                justifyContent: 'space-between', 
+                                                alignItems: 'center' 
+                                            }}
                                         >
-                                            <option value="">Select Category</option>
-                                            {policyTypes.map(type => (
-                                                <option key={type._id} value={type._id}>{type.name}</option>
-                                            ))}
-                                        </select>
+                                            <h4 style={{ fontSize: '0.9rem', fontWeight: 600, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                                                <BriefcaseBusiness size={16} /> Commission Details (Internal Use Only)
+                                            </h4>
+                                            {isCommissionOpen ? <ChevronUp size={16} color="#64748b" /> : <ChevronDown size={16} color="#64748b" />}
+                                        </div>
+                                        
+                                        {isCommissionOpen && (
+                                            <div style={{ padding: '1.5rem', borderTop: '1px solid #e2e8f0' }}>
+                                               
+                                                
+                                                <div className="form-grid">
+                                                    {formData.policySource === 'THIRD_PARTY' && (
+                                                        <>
+                                                            <div className="form-group">
+                                                                <label className="form-label">Company Commission (%)</label>
+                                                                <input 
+                                                                    type="number" 
+                                                                    className="form-input" 
+                                                                    name="companyCommissionValue"
+                                                                    value={formData.companyCommissionValue}
+                                                                    onChange={handleInputChange}
+                                                                    min="0"
+                                                                    max="100"
+                                                                    placeholder="Company %"
+                                                                />
+                                                            </div>
+
+                                                            <div className="form-group">
+                                                                <label className="form-label">Additional Commission (%) <span style={{ fontWeight: 400, color: '#94a3b8', userId: 'select-none' }}>(Optional)</span></label>
+                                                                <input 
+                                                                    type="number" 
+                                                                    className="form-input" 
+                                                                    name="adminCommissionValue"
+                                                                    value={formData.adminCommissionValue}
+                                                                    onChange={handleInputChange}
+                                                                    min="0"
+                                                                    max="100"
+                                                                    placeholder="Admin %"
+                                                                />
+                                                            </div>
+                                                        </>
+                                                    )}
+
+                                                    <div className="form-group">
+                                                        <label className="form-label">Agent Commission (%)</label>
+                                                        <input 
+                                                            type="number" 
+                                                            className={`form-input ${formErrors.agentCommission ? 'border-error' : ''}`}
+                                                            name="agentCommission"
+                                                            value={formData.agentCommission}
+                                                            onChange={handleInputChange}
+                                                            required
+                                                            min="0"
+                                                            max="100"
+                                                            placeholder="Payable to Agent"
+                                                        />
+                                                        {formErrors.agentCommission && <div style={{ color: '#ef4444', fontSize: '0.7rem', marginTop: '4px' }}>{formErrors.agentCommission}</div>}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
-                                    <div className="form-group">
-                                        <label className="form-label">Plan Name</label>
-                                        <input 
-                                            type="text" 
-                                            className="form-input" 
-                                            name="planName"
-                                            value={formData.planName}
-                                            onChange={handleInputChange}
-                                            placeholder="e.g. Gold Plan"
-                                            required
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label className="form-label">Premium Amount ($)</label>
-                                        <input 
-                                            type="number" 
-                                            className={`form-input ${formErrors.premiumAmount ? 'border-error' : ''}`}
-                                            name="premiumAmount"
-                                            value={formData.premiumAmount}
-                                            onChange={handleInputChange}
-                                            required
-                                            min="0"
-                                        />
-                                        {formErrors.premiumAmount && <div style={{ color: '#ef4444', fontSize: '0.7rem', marginTop: '4px' }}>{formErrors.premiumAmount}</div>}
-                                    </div>
-                                    <div className="form-group">
-                                        <label className="form-label">Coverage Amount ($)</label>
-                                        <input 
-                                            type="number" 
-                                            className={`form-input ${formErrors.coverageAmount ? 'border-error' : ''}`}
-                                            name="coverageAmount"
-                                            value={formData.coverageAmount}
-                                            onChange={handleInputChange}
-                                            required
-                                            min="0"
-                                        />
-                                        {formErrors.coverageAmount && <div style={{ color: '#ef4444', fontSize: '0.7rem', marginTop: '4px' }}>{formErrors.coverageAmount}</div>}
-                                    </div>
-                                    <div className="form-group">
-                                        <label className="form-label">Tenure Value</label>
-                                        <input 
-                                            type="number" 
-                                            className={`form-input ${formErrors.tenureValue ? 'border-error' : ''}`}
-                                            name="tenureValue"
-                                            value={formData.tenureValue}
-                                            onChange={handleInputChange}
-                                            required
-                                            min="1"
-                                            placeholder="e.g. 1"
-                                        />
-                                        {formErrors.tenureValue && <div style={{ color: '#ef4444', fontSize: '0.7rem', marginTop: '4px' }}>{formErrors.tenureValue}</div>}
-                                        <div className="form-helper">Policy duration used when customer purchases the policy</div>
-                                    </div>
-                                    <div className="form-group">
-                                        <label className="form-label">Tenure Unit</label>
-                                        <select 
-                                            className="form-select"
-                                            name="tenureUnit"
-                                            value={formData.tenureUnit}
-                                            onChange={handleInputChange}
-                                            required
-                                        >
-                                            <option value="" disabled>Select Unit</option>
-                                            <option value="days">Days</option>
-                                            <option value="months">Months</option>
-                                            <option value="years">Years</option>
-                                        </select>
-                                    </div>
-                                    <div className="form-group">
-                                        <label className="form-label">Min Age</label>
-                                        <input 
-                                            type="number" 
-                                            className={`form-input ${formErrors.minAge ? 'border-error' : ''}`}
-                                            name="minAge"
-                                            value={formData.minAge}
-                                            onChange={handleInputChange}
-                                            required
-                                        />
-                                        {formErrors.minAge && <div style={{ color: '#ef4444', fontSize: '0.7rem', marginTop: '4px' }}>{formErrors.minAge}</div>}
-                                    </div>
-                                    <div className="form-group">
-                                        <label className="form-label">Max Age</label>
-                                        <input 
-                                            type="number" 
-                                            className={`form-input ${formErrors.maxAge ? 'border-error' : ''}`}
-                                            name="maxAge"
-                                            value={formData.maxAge}
-                                            onChange={handleInputChange}
-                                            required
-                                        />
-                                        {formErrors.maxAge && <div style={{ color: '#ef4444', fontSize: '0.7rem', marginTop: '4px' }}>{formErrors.maxAge}</div>}
-                                    </div>
+
+                                    {/* Section 5: Additional Information */}
+                                    <h4 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#1e293b', marginTop: '1.5rem', marginBottom: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem' }}>
+                                        Additional Information
+                                    </h4>
                                     <div className="form-group form-group-full">
                                         <label className="form-label">Description</label>
                                         <textarea 
@@ -722,35 +949,36 @@ const Policies = () => {
                                             placeholder="Write a brief overview of the policy benefits..."
                                         />
                                     </div>
-                                    <div className="form-group">
-                                        <label className="form-label">Status</label>
-                                        <select 
-                                            className="form-select"
-                                            name="status"
-                                            value={formData.status}
-                                            onChange={handleInputChange}
-                                        >
-                                            <option value="active">Active</option>
-                                            <option value="inactive">Inactive</option>
-                                        </select>
-                                    </div>
-                                    <div className="form-group">
-                                        <label className="form-label" style={{ visibility: 'hidden' }}>Renewable</label>
-                                        <div style={{ display: 'flex', alignItems: 'center', height: '38px' }}>
-                                            <label className="inline-flex items-center" style={{ cursor: 'pointer' }}>
-                                                <input 
-                                                    type="checkbox" 
-                                                    name="renewable"
-                                                    checked={formData.renewable}
-                                                    onChange={handleInputChange}
-                                                    style={{ width: '1.25rem', height: '1.25rem', accentColor: '#2563eb' }}
-                                                />
-                                                <span style={{ marginLeft: '10px', fontSize: '0.875rem', fontWeight: 500, color: '#334155' }}>Renewable Policy</span>
-                                            </label>
+                                    <div className="form-grid">
+                                        <div className="form-group">
+                                            <label className="form-label">Status</label>
+                                            <select 
+                                                className="form-select"
+                                                name="status"
+                                                value={formData.status}
+                                                onChange={handleInputChange}
+                                            >
+                                                <option value="active">Active</option>
+                                                <option value="inactive">Inactive</option>
+                                            </select>
                                         </div>
-                                        <div className="form-helper">Allows renewal after policy expiry</div>
+                                        <div className="form-group">
+                                            <label className="form-label" style={{ visibility: 'hidden' }}>Renewable</label>
+                                            <div style={{ display: 'flex', alignItems: 'center', height: '38px' }}>
+                                                <label className="inline-flex items-center" style={{ cursor: 'pointer' }}>
+                                                    <input 
+                                                        type="checkbox" 
+                                                        name="renewable"
+                                                        checked={formData.renewable}
+                                                        onChange={handleInputChange}
+                                                        style={{ width: '1.25rem', height: '1.25rem', accentColor: '#2563eb' }}
+                                                    />
+                                                    <span style={{ marginLeft: '10px', fontSize: '0.875rem', fontWeight: 500, color: '#334155' }}>Renewable Policy</span>
+                                                </label>
+                                            </div>
+                                            <div className="form-helper">Allows renewal after policy expiry</div>
+                                        </div>
                                     </div>
-                                </div>
                                 </fieldset>
                                 <div className="modal-footer">
                                     <button type="button" className="btn-secondary" onClick={() => setIsModalOpen(false)} style={{ marginRight: '1rem' }}>
@@ -785,6 +1013,11 @@ const Policies = () => {
                     </div>
                 )}
             </div>
+            {/* <ProvidersModal 
+                isOpen={isProvidersModalOpen} 
+                onClose={() => setIsProvidersModalOpen(false)} 
+                onUpdate={(updatedProviders) => setProviders(updatedProviders)}
+            /> */}
         </Layout>
     );
 };

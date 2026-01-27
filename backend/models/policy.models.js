@@ -11,6 +11,15 @@ const policySchema = new mongoose.Schema({
         ref: "PolicyType",
         required: true
     },
+    policySource: {
+        type: String,
+        enum: ["IN_HOUSE", "THIRD_PARTY"],
+        default: "IN_HOUSE"
+    },
+    provider: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Provider"
+    },
     planName: {
         type: String,
         required: true,
@@ -29,6 +38,21 @@ const policySchema = new mongoose.Schema({
         type: Number,
         required: true,
         min: 0
+    },
+    // Commission Details
+    agentCommission: {
+        type: Number,
+        required: true,
+        min: 0,
+        default: 0
+    },
+    companyCommission: {
+        value: { type: Number, min: 0, default: 0 },
+        type: { type: String, enum: ["PERCENTAGE", "FIXED"], default: "PERCENTAGE" }
+    },
+    adminCommission: {
+        value: { type: Number, min: 0, default: 0 },
+        type: { type: String, enum: ["PERCENTAGE", "FIXED"], default: "PERCENTAGE" }
     },
     tenureValue: {
         type: Number,

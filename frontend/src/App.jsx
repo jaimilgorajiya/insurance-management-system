@@ -12,6 +12,7 @@ import UsersAndRoles from './pages/UsersAndRoles';
 import PolicyTypes from './pages/PolicyTypes';
 import Policies from './pages/Policies';
 import PolicyDetails from './pages/PolicyDetails';
+import Providers from './pages/Providers';
 import Documents from './pages/Documents';
 import CustomerDocuments from './pages/CustomerDocuments';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -40,6 +41,7 @@ function App() {
           <Route path="/admin/agents/:id" element={<AgentDetails />} />
           <Route path="/admin/policy-types" element={<PolicyTypes />} />
           <Route path="/admin/policies" element={<Policies />} />
+          <Route path="/admin/providers" element={<Providers />} />
           <Route path="/admin/policies/:id" element={<PolicyDetails />} />
           <Route path="/admin/documents" element={<Documents />} />
           <Route path="/admin/documents/customers/:customerId" element={<CustomerDocuments />} />

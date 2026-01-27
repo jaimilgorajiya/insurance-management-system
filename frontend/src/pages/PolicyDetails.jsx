@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { showErrorAlert } from '../utils/swalUtils';
-import { Shield, Clock, DollarSign, User, Activity, AlertCircle, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Shield, Clock, DollarSign, User, Activity, AlertCircle, ArrowLeft, CheckCircle2, Building, Briefcase } from 'lucide-react';
 
 const PolicyDetails = () => {
     const { id } = useParams();
@@ -100,6 +100,27 @@ const PolicyDetails = () => {
                                 </span>
                             </div>
                             <div className="review-item">
+                                <span className="review-label">Source</span>
+                                <span className="review-value" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    {policy.policySource === 'THIRD_PARTY' ? (
+                                        <>
+                                            <span style={{ backgroundColor: '#fef3c7', color: '#d97706', padding: '1px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600 }}>Third-Party</span>
+                                        </>
+                                    ) : (
+                                        <span style={{ color: '#64748b' }}>In-House</span>
+                                    )}
+                                </span>
+                            </div>
+                            {policy.policySource === 'THIRD_PARTY' && (
+                                <div className="review-item">
+                                    <span className="review-label">Insurance Provider</span>
+                                    <span className="review-value" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, color: '#0f172a' }}>
+                                        <Building size={16} /> 
+                                        {policy.provider?.name || 'Unknown Provider'}
+                                    </span>
+                                </div>
+                            )}
+                            <div className="review-item">
                                 <span className="review-label">Renewable</span>
                                 <span className="review-value" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                     {policy.renewable ? (
@@ -131,12 +152,51 @@ const PolicyDetails = () => {
                                     ${policy.coverageAmount?.toLocaleString()}
                                 </span>
                             </div>
-                             <div className="review-item">
+                            <div className="review-item">
                                 <span className="review-label">Benefit Multiplier</span>
                                 <span className="review-value">
                                     {(policy.coverageAmount / policy.premiumAmount).toFixed(1)}x Premium
                                 </span>
                             </div>
+                        </div>
+                    </div>
+
+                    {/* Commission Structure */}
+                    <div className="review-section">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
+                            <Briefcase className="text-primary" size={24} />
+                            <h3 className="review-section-title" style={{ marginBottom: 0 }}>Commission Structure</h3>
+                        </div>
+                        <div className="review-grid">
+                            <div className="review-item">
+                                <span className="review-label">Agent Commission</span>
+                                <span className="review-value" style={{ color: '#ea580c', fontWeight: 700, fontSize: '1.25rem' }}>
+                                    {policy.agentCommission || 0}%
+                                    <span style={{ fontSize: '0.875rem', color: '#64748b', marginLeft: '8px', fontWeight: 500 }}>
+                                        (${((policy.agentCommission || 0) * policy.premiumAmount / 100).toLocaleString()})
+                                    </span>
+                                </span>
+                            </div>
+                            {policy.policySource === 'THIRD_PARTY' && (
+                                <>
+                                    <div className="review-item">
+                                        <span className="review-label">Company Commission</span>
+                                        <span className="review-value">
+                                            {policy.companyCommission?.type === 'PERCENTAGE' 
+                                                ? `${policy.companyCommission.value}%`
+                                                : `$${policy.companyCommission?.value}`}
+                                        </span>
+                                    </div>
+                                    <div className="review-item">
+                                        <span className="review-label">Additional Commission</span>
+                                        <span className="review-value">
+                                            {policy.adminCommission?.type === 'PERCENTAGE' 
+                                                ? `${policy.adminCommission.value}%`
+                                                : `$${policy.adminCommission?.value}`}
+                                        </span>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
 
