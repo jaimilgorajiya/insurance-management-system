@@ -276,7 +276,8 @@ const CustomerDetails = () => {
                 <div className="review-section" style={{ marginTop: '2rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                         <h3 className="review-section-title" style={{ marginBottom: 0 }}>Purchased Policy Details</h3>
-                        {(localStorage.getItem('userRole') === 'admin' || (localStorage.getItem('userRole') === 'agent' && hasPermission('customers', 'edit'))) && (
+                        {(localStorage.getItem('userRole') === 'admin' || 
+                          (localStorage.getItem('userRole') === 'agent' && (hasPermission('customers', 'edit') || hasPermission('policies', 'view')))) && (
                             <button 
                                 className="btn-primary" 
                                 style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}

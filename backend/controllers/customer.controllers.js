@@ -126,13 +126,23 @@ export const updateCustomer = async (req, res) => {
         const userPermissions = req.user.permissions;
 
         // Fields that require 'customers.edit' permission for agents
-        const requiresEditPermission = name || email || mobile || status || selectedPolicy;
+        const requiresEditPermission = name || email || mobile || status;
         
-        if (req.user.role === 'agent' && requiresEditPermission && !userPermissions?.customers?.edit) {
-            return res.status(403).json({
-                success: false,
-                message: "You do not have permission to edit customer details."
-            });
+        if (req.user.role === 'agent') {
+            // Check for customer detail edits
+            if (requiresEditPermission && !userPermissions?.customers?.edit) {
+                return res.status(403).json({
+                    success: false,
+                    message: "You do not have permission to edit customer details."
+                });
+            }
+            // Check for policy purchase
+            if (selectedPolicy && !userPermissions?.policies?.view && !userPermissions?.customers?.edit) {
+                return res.status(403).json({
+                    success: false,
+                    message: "You do not have permission to purchase policies for customers."
+                });
+            }
         }
 
         if (name) updateOperations.$set.name = name;

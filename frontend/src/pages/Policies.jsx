@@ -294,6 +294,9 @@ const Policies = () => {
             
             const payload = {
                 ...formData,
+                // Ensure provider is null for in-house policies, and handle empty strings for third-party
+                provider: formData.policySource === 'IN_HOUSE' ? null : (formData.provider === '' ? null : formData.provider),
+                policyType: formData.policyType === '' ? null : formData.policyType,
                 companyCommission: {
                     value: formData.companyCommissionValue || 0,
                     type: formData.companyCommissionType

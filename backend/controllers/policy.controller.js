@@ -139,8 +139,9 @@ export const createPolicy = asyncHandler(async (req, res) => {
         renewable,
         renewable,
         status: status || "active",
+        status: status || "active",
         policySource: policySource || "IN_HOUSE",
-        provider: policySource === "THIRD_PARTY" ? provider : undefined,
+        provider: (policySource === "THIRD_PARTY" && provider && provider !== "") ? provider : undefined,
         companyCommission: policySource === "THIRD_PARTY" ? companyCommission : undefined,
         adminCommission: policySource === "THIRD_PARTY" ? adminCommission : undefined,
         createdBy: req.user?._id
@@ -197,7 +198,8 @@ export const updatePolicy = asyncHandler(async (req, res) => {
     const updatedPolicy = await Policy.findByIdAndUpdate(
         id,
         {
-            ...updateData
+            ...updateData,
+            provider: (updateData.policySource === 'THIRD_PARTY' || (!updateData.policySource && policy.policySource === 'THIRD_PARTY')) && updateData.provider && updateData.provider !== "" ? updateData.provider : undefined
         },
         { new: true, runValidators: true }
     );
