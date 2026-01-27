@@ -181,3 +181,130 @@ export const logoutAdmin = async (req, res) => {
         message: "Logged out successfully" 
     });
 };
+
+export const getAdminDashboardStats = async (req, res) => {
+    try {
+        // 1. Fetch all customers with their policies fully populated
+        const customers = await User.find({ role: "customer" })
+            .select("name email createdAt kycStatus purchasedPolicies")
+            .populate({
+                path: "purchasedPolicies.policy",
+                select: "policyName premiumAmount policyType",
+                populate: {
+                    path: "policyType",
+                    select: "name"
+                }
+            });
+
+        let totalPolicies = 0;
+        let activePolicies = 0;
+        let pendingApprovals = 0; // KYC Pending
+        let totalRevenue = 0;
+        
+        const distributionMap = {};
+        const revenueMap = {};
+        
+        // Activity Stream
+        let activities = [];
+
+        // Initialize last 6 months for revenue map
+        for (let i = 5; i >= 0; i--) {
+            const d = new Date();
+            d.setMonth(d.getMonth() - i);
+            const monthKey = d.toLocaleString('default', { month: 'short' });
+            revenueMap[monthKey] = 0;
+        }
+
+        customers.forEach(cust => {
+            // Activity: New Customer
+            activities.push({
+                type: 'USER_ONBOARDED',
+                title: 'New customer onboarded',
+                subtitle: `Customer: ${cust.name}`,
+                date: new Date(cust.createdAt),
+                status: 'active'
+            });
+
+            // Count Pending KYC
+            if (cust.kycStatus === 'pending') {
+                pendingApprovals++;
+            }
+
+            if (cust.purchasedPolicies && cust.purchasedPolicies.length > 0) {
+                cust.purchasedPolicies.forEach(p => {
+                    totalPolicies++;
+                    
+                    if (p.status === 'active') {
+                        activePolicies++;
+                    }
+
+                    const policy = p.policy;
+                    if (policy) {
+                        // Revenue
+                        totalRevenue += (policy.premiumAmount || 0);
+
+                        // Distribution
+                        const typeName = policy.policyType?.name || "Other";
+                        distributionMap[typeName] = (distributionMap[typeName] || 0) + 1;
+
+                        // Monthly Trend (Based on purchaseDate)
+                        if (p.purchaseDate) {
+                            const pDate = new Date(p.purchaseDate);
+                            const monthKey = pDate.toLocaleString('default', { month: 'short' });
+                            if (revenueMap.hasOwnProperty(monthKey)) {
+                                revenueMap[monthKey] += (policy.premiumAmount || 0);
+                            }
+
+                            // Activity: Policy Purchased
+                            activities.push({
+                                type: 'POLICY_PURCHASED',
+                                title: `New ${policy.policyName || policy.policyType?.name || 'Policy'} purchased`,
+                                subtitle: `Customer: ${cust.name}`,
+                                date: pDate,
+                                status: p.status || 'active'
+                            });
+                        }
+                    }
+                });
+            }
+        });
+
+        // Sort activities by date desc and take top 5
+        activities.sort((a, b) => b.date - a.date);
+        const recentActivities = activities.slice(0, 5);
+
+        // Format Charts Data
+        const policyDistribution = Object.keys(distributionMap).map(key => ({
+            name: key,
+            value: distributionMap[key]
+        }));
+
+        const monthlyRevenue = Object.keys(revenueMap).map(key => ({
+            name: key,
+            revenue: revenueMap[key]
+        }));
+
+        res.status(200).json({
+            success: true,
+            stats: {
+                totalPolicies,
+                activePolicies,
+                pendingApprovals,
+                totalRevenue,
+                policyDistribution,
+                monthlyRevenue,
+                claimsStats: { // Mocked as requested
+                    approved: 0,
+                    pending: 0,
+                    rejected: 0,
+                    total: 0
+                },
+                recentActivities
+            }
+        });
+
+    } catch (error) {
+        console.error("Dashboard stats error:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};

@@ -17,7 +17,7 @@ const Header = ({ toggleSidebar }) => {
       .slice(0, 2);
   };
 
-  return (
+  return (  
     <header className="top-header">
       <div className="header-left">
       

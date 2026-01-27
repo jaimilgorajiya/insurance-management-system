@@ -233,55 +233,107 @@ export const getAgentDashboardStats = async (req, res) => {
     try {
         const agentId = req.user._id;
 
-        // 1. My Customers
-        const totalCustomers = await User.countDocuments({ 
+        // 1. Assigned Customers
+        const assignedCustomers = await User.countDocuments({ 
             role: 'customer', 
             assignedAgentId: agentId 
         });
 
-        // 2. Pending Verifications
-        const pendingVerifications = await User.countDocuments({ 
-            role: 'customer', 
-            assignedAgentId: agentId,
-            kycStatus: "pending"
-        });
-
-        // 3. Policies Sold & Commission (MTD)
+        // 2. Fetch customers with policies for deep calculations
         const customersWithPolicies = await User.find({
             "purchasedPolicies.agentId": agentId
-        }).populate("purchasedPolicies.policy");
-
-        let policiesSold = 0;
-        let commissionMTD = 0;
-        
-        const now = new Date();
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-        customersWithPolicies.forEach(customer => {
-            customer.purchasedPolicies.forEach(purchase => {
-                // Check if sold by this agent
-                if (purchase.agentId?.toString() === agentId.toString()) {
-                    policiesSold++;
-
-                    // Check if purchased this month
-                    const purchaseDate = new Date(purchase.purchaseDate);
-                    if (purchaseDate >= startOfMonth) {
-                        const commissionPercent = purchase.policy?.agentCommission || 0;
-                        const premium = purchase.policy?.premiumAmount || 0;
-                        const earned = (commissionPercent / 100) * premium;
-                        commissionMTD += earned;
-                    }
-                }
-            });
+        }).select("name purchasedPolicies assignedAgentId createdAt").populate({
+            path: "purchasedPolicies.policy",
+            select: "policyName premiumAmount agentCommission policyType",
+            populate: { path: "policyType", select: "name" }
         });
+
+        let activePolicies = 0;
+        let totalCommission = 0;
+        let monthlySalesMap = {}; // Key: "Jan", Value: count
+        let recentCustomersList = [];
+
+        // Initialize last 6 months for chart
+        for (let i = 5; i >= 0; i--) {
+            const d = new Date();
+            d.setMonth(d.getMonth() - i);
+            const monthKey = d.toLocaleString('default', { month: 'short' });
+            monthlySalesMap[monthKey] = 0;
+        }
+
+        // Helper to track unique recent customers
+        const uniqueRecentCustMap = new Map();
+
+        customersWithPolicies.forEach(cust => {
+            if (cust.purchasedPolicies) {
+                cust.purchasedPolicies.forEach(p => {
+                    if (p.agentId?.toString() === agentId.toString()) {
+                        
+                        // Active Policies
+                        if (p.status === 'active') {
+                            activePolicies++;
+                        }
+
+                        // Commission Calculation
+                        const commissionPercent = p.policy?.agentCommission || 0;
+                        const premium = p.policy?.premiumAmount || 0;
+                        const earned = (commissionPercent / 100) * premium;
+                        totalCommission += earned;
+
+                        // Monthly Performance (Line Chart)
+                        if (p.purchaseDate) {
+                            const pDate = new Date(p.purchaseDate);
+                            const monthKey = pDate.toLocaleString('default', { month: 'short' });
+                            if (monthlySalesMap.hasOwnProperty(monthKey)) {
+                                monthlySalesMap[monthKey] += 1; // Counting sales volume
+                            }
+
+                            // Track latest purchase for Recent Customers list
+                            // We only want the LATEST purchase for a specific customer to appear once
+                            const existing = uniqueRecentCustMap.get(cust._id.toString());
+                            if (!existing || pDate > existing.date) {
+                                uniqueRecentCustMap.set(cust._id.toString(), {
+                                    _id: cust._id,
+                                    name: cust.name,
+                                    policyName: p.policy?.policyName || p.policy?.policyType?.name || "Insurance Policy",
+                                    status: p.status,
+                                    date: pDate,
+                                    premium: premium
+                                });
+                            }
+                        }
+                    }
+                });
+            }
+        });
+
+        // Convert map to array
+        recentCustomersList = Array.from(uniqueRecentCustMap.values());
+
+        // Sort and slice recent customers
+        recentCustomersList.sort((a, b) => b.date - a.date);
+        const recentCustomers = recentCustomersList.slice(0, 5);
+
+        // Format Chart Data
+        const monthlyPerformance = Object.keys(monthlySalesMap).map(key => ({
+            name: key,
+            value: monthlySalesMap[key]
+        }));
+
+        // Mock Target Progress (Assume target $5000/month or 10 sales/month? Let's use 10 sales count for now)
+        const currentMonthName = new Date().toLocaleString('default', { month: 'short' });
+        const currentMonthSales = monthlySalesMap[currentMonthName] || 0;
+        const targetProgress = Math.min((currentMonthSales / 10) * 100, 100); // 10 sales target
 
         res.status(200).json({
             success: true,
             stats: {
-                totalCustomers,
-                policiesSold,
-                pendingVerifications,
-                commissionMTD
+                assignedCustomers,
+                activePolicies,
+                earnedCommission: Math.round(totalCommission),
+                targetProgress: Math.round(targetProgress * 10) / 10, // 1 decimal
+                monthlyPerformance,
+                recentCustomers
             }
         });
 

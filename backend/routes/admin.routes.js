@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
     registerAdmin, loginAdmin, logoutAdmin,
     getAllAdmins, updateAdminStatus, updateAdmin, deleteAdmin, // Master Actions
+    getAdminDashboardStats
 } from "../controllers/admin.controllers.js";
 
 import { verifyJWT, authorizeRoles } from "../middlewares/auth.middleware.js";
@@ -18,6 +19,7 @@ router.post("/register", registerAdmin); // Master admin can create admins witho
 // --- ADMIN MANAGEMENT (Protected Routes) ---
 // These routes require admin role authorization
 router.get("/all", verifyJWT, authorizeRoles("admin"), getAllAdmins);
+router.get("/stats", verifyJWT, authorizeRoles("admin"), getAdminDashboardStats);
 router.patch("/status/:id", verifyJWT, authorizeRoles("admin"), updateAdminStatus);
 router.put("/update/:id", verifyJWT, authorizeRoles("admin"), updateAdmin);
 router.delete("/delete/:id", verifyJWT, authorizeRoles("admin"), deleteAdmin);
