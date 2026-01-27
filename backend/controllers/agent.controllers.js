@@ -62,12 +62,69 @@ export const logoutAgent = async (req, res) => {
 export const getAllAgents = async (req, res) => {
     try {
         const agents = await User.find({ role: "agent" }).select("-password");
+        
+        // Fetch all customers with policy details to calculate stats
+        const customers = await User.find({ role: "customer" })
+            .populate("purchasedPolicies.policy");
+
+        const agentsWithStats = agents.map(agent => {
+            const agentId = agent._id.toString();
+            
+            // 1. Customer Count (Assigned to agent)
+            const myCustomers = customers.filter(c => c.assignedAgentId?.toString() === agentId);
+            const customerCount = myCustomers.length;
+
+            // 2. Active Policies & Commission
+            let activePolicies = 0;
+            let commissionMTD = 0;
+            
+            const now = new Date();
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+            customers.forEach(cust => {
+                if (cust.purchasedPolicies) {
+                    cust.purchasedPolicies.forEach(p => {
+                        if (p.agentId?.toString() === agentId) {
+                            // Active Policy Check
+                            if (p.status === 'active') {
+                                activePolicies++;
+                            }
+
+                            // Commission MTD Check
+                            const purchaseDate = new Date(p.purchaseDate);
+                            if (purchaseDate >= startOfMonth) {
+                                const commissionRate = p.policy?.agentCommission || 0; // Assuming percentage
+                                const premium = p.policy?.premiumAmount || 0;
+                                const earned = (commissionRate / 100) * premium;
+                                commissionMTD += earned;
+                            }
+                        }
+                    });
+                }
+            });
+
+            // 3. Target Progress (Mock target of $5000)
+            const target = 5000;
+            const targetProgress = Math.min(Math.round((commissionMTD / target) * 100), 100);
+
+            return {
+                ...agent.toObject(),
+                customerCount,
+                activePolicies,
+                commission: Math.round(commissionMTD), // Round to nearest integer
+                targetProgress
+            };
+        });
+
         res.status(200).json({
             message: "Agents fetched successfully",
-            total: agents.length,
-            agents
+            total: agentsWithStats.length,
+            agents: agentsWithStats
         });
-    } catch (e) { res.status(500).json({ message: e.message }); }
+    } catch (e) { 
+        console.error("Error fetching agents:", e);
+        res.status(500).json({ message: e.message }); 
+    }
 };
 
 export const updateAgent = async (req, res) => {

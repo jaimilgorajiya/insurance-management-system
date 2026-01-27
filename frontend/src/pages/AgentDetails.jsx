@@ -188,32 +188,30 @@ const AgentDetails = () => {
                         </div>
                     </div>
 
-                    <div className="review-section">
-                        <h3 className="review-section-title">Performance Metrics</h3>
-                        <div className="review-grid">
-                            <div className="review-item">
-                                <span className="review-label">Total Customers</span>
-                                <span className="review-value">0</span>
-                            </div>
-                            <div className="review-item">
-                                <span className="review-label">Active Policies</span>
-                                <span className="review-value">0</span>
-                            </div>
-                            <div className="review-item">
-                                <span className="review-label">Total Commission</span>
-                                <span className="review-value">$0.00</span>
-                            </div>
-                             <div className="review-item" style={{display:'block'}}>
-                                <span className="review-label" style={{marginBottom:'0.5rem', display:'block'}}>Target Completion</span>
-                                <div style={{ width: '100%', height: '8px', backgroundColor: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
-                                    <div style={{ width: '0%', height: '100%', backgroundColor: '#10b981' }}></div>
-                                </div>
-                            </div>
+                <div className="review-section">
+                    <h3 className="review-section-title">Performance Metrics</h3>
+                    <div className="review-grid">
+                        <div className="review-item">
+                            <span className="review-label">Total Customers</span>
+                            <span className="review-value">{agent.customerCount || 0}</span>
                         </div>
-                        <p style={{ marginTop: '1rem', fontStyle: 'italic', fontSize: '0.875rem', color: '#94a3b8' }}>
-                            * Performance metrics are placeholders pending policy integration.
-                        </p>
+                        <div className="review-item">
+                            <span className="review-label">Active Policies</span>
+                            <span className="review-value">{agent.activePolicies || 0}</span>
+                        </div>
+                        <div className="review-item">
+                            <span className="review-label">Total Commission (MTD)</span>
+                            <span className="review-value">${agent.commission || 0}</span>
+                        </div>
+                         <div className="review-item" style={{display:'block'}}>
+                            <span className="review-label" style={{marginBottom:'0.5rem', display:'block'}}>Target Completion</span>
+                            <div style={{ width: '100%', height: '8px', backgroundColor: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                                <div style={{ width: `${agent.targetProgress || 0}%`, height: '100%', backgroundColor: '#10b981' }}></div>
+                            </div>
+                            <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem', display: 'block' }}>{agent.targetProgress || 0}% of Monthly Goal</span>
+                        </div>
                     </div>
+                </div>
                 </div>
             </div>
 

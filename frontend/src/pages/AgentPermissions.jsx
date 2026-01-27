@@ -191,8 +191,7 @@ const AgentPermissions = () => {
                         <div>
                             <h4 style={{ margin: 0, color: '#0369a1', fontWeight: 600 }}>Role Isolation Notice</h4>
                             <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.875rem', color: '#075985' }}>
-                                These permissions are specific to the agent's role. Agents can only manage data that is assigned to them, 
-                                even if "View" or "Edit" permissions are enabled for a whole module.
+                                These permissions are specific to the agent's role. Agents can only manage data that is assigned to them.
                             </p>
                         </div>
                     </div>

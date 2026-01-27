@@ -89,12 +89,7 @@ const Agents = () => {
             const agentsData = await agentsRes.json();
             let fetchedAgents = agentsData.agents || [];
 
-            // 2. Fetch Customers (for metrics)
-            const customersRes = await fetch(`${API_BASE_URL}/customer/all`, { headers });
-            const customersData = await customersRes.json();
-            const allCustomers = customersData.customers || [];
-
-            // 3. Process Chart Data (Last 6 Months) - AGENT REGISTRATIONS
+            // 2. Process Chart Data (Last 6 Months) - AGENT REGISTRATIONS
             const last6Months = [];
             for (let i = 5; i >= 0; i--) {
                 const d = new Date();
@@ -115,21 +110,6 @@ const Agents = () => {
                 if (bin) bin.value++;
             });
             setChartData(last6Months);
-
-            // 4. Enrich Agents with Metrics (Real Customer Count)
-            fetchedAgents = fetchedAgents.map(agent => {
-                const agentCustomers = allCustomers.filter(c => 
-                    c.createdBy && (c.createdBy._id === agent._id || c.createdBy === agent._id)
-                );
-                
-                return {
-                    ...agent,
-                    customerCount: agentCustomers.length,
-                    activePolicies: 0, // Default 0
-                    commission: 0,     // Default 0
-                    targetProgress: 0  // Default 0
-                };
-            });
 
             // 5. Apply Filters
             if (filters.search) {
