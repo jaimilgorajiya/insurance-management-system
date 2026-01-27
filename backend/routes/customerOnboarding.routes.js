@@ -20,7 +20,8 @@ router.post("/onboard",
     upload.fields([
         { name: 'governmentId', maxCount: 1 },
         { name: 'proofOfAddress', maxCount: 1 },
-        { name: 'incomeProof', maxCount: 1 }
+        { name: 'incomeProof', maxCount: 1 },
+        { name: 'nomineeId', maxCount: 1 }
     ]), 
     onboardCustomer
 );
@@ -55,7 +56,9 @@ router.put("/update/:customerId",
     upload.fields([
         { name: 'governmentId', maxCount: 1 },
         { name: 'proofOfAddress', maxCount: 1 },
-        { name: 'incomeProof', maxCount: 1 }
+        { name: 'incomeProof', maxCount: 1 },
+        { name: 'nomineeId', maxCount: 1 },
+        { name: 'otherDocuments', maxCount: 10 }
     ]),
     updateCustomerOnboarding
 );

@@ -87,7 +87,13 @@ export const onboardCustomer = async (req, res) => {
             state,
             zipCode,
             country,
-            selectedPolicy
+            selectedPolicy,
+            // Nominee fields
+            addNominee,
+            nomineeName,
+            nomineeRelationship,
+            nomineeDob,
+            nomineeContact
         } = req.body;
 
         // Validate required fields
@@ -180,6 +186,18 @@ export const onboardCustomer = async (req, res) => {
             }
         };
 
+        // Add Nominee ID if uploaded
+        if (req.files.nomineeId) {
+            kycDocuments.nomineeId = {
+                filename: req.files.nomineeId[0].filename,
+                originalName: req.files.nomineeId[0].originalname,
+                uploadDate: new Date(),
+                fileType: req.files.nomineeId[0].mimetype,
+                fileSize: req.files.nomineeId[0].size,
+                status: "pending"
+            };
+        }
+
         // Create new customer
         const newCustomer = new User({
             firstName,
@@ -200,6 +218,12 @@ export const onboardCustomer = async (req, res) => {
                 zipCode,
                 country
             },
+            nomineeDetails: (addNominee === 'true' || addNominee === true) ? {
+                name: nomineeName,
+                relationship: nomineeRelationship,
+                dateOfBirth: nomineeDob ? new Date(nomineeDob) : null,
+                contact: nomineeContact
+            } : {},
             kycDocuments,
             selectedPolicy: selectedPolicy || null,
             password: hashedPassword,
@@ -320,16 +344,9 @@ export const getKYCDocument = async (req, res) => {
         const { customerId, documentType } = req.params;
 
         // Validate document type
-        const validDocTypes = ['governmentId', 'proofOfAddress', 'incomeProof'];
-        if (!validDocTypes.includes(documentType)) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid document type"
-            });
-        }
-
-        // Find customer
+        const validDocTypes = ['governmentId', 'proofOfAddress', 'incomeProof', 'nomineeId'];
         const customer = await User.findById(customerId);
+        
         if (!customer) {
             return res.status(404).json({
                 success: false,
@@ -352,8 +369,22 @@ export const getKYCDocument = async (req, res) => {
             });
         }
 
-        // Get document info
-        const document = customer.kycDocuments[documentType];
+        // Retrieve document from kycDocuments
+        let document = null;
+
+        if (documentType.startsWith('other')) {
+            // Handle other documents retrieval by ID
+            // Format expected: "other/DOC_ID" or just "other" if checking array/legacy
+            const parts = documentType.split('/');
+            if (parts.length > 1) {
+                const docId = parts[1];
+                document = customer.kycDocuments?.otherDocuments?.id(docId);
+            }
+        } else {
+             // Handle standard documents: governmentId, proofOfAddress, incomeProof, nomineeId
+             document = customer.kycDocuments?.[documentType];
+        }
+
         if (!document || !document.filename) {
             return res.status(404).json({
                 success: false,
@@ -361,7 +392,8 @@ export const getKYCDocument = async (req, res) => {
             });
         }
 
-        // Construct file path
+        // Construct file path using process.cwd() to match the upload configuration
+        const uploadsDir = path.join(process.cwd(), 'uploads', 'kyc-documents');
         const filePath = path.join(uploadsDir, document.filename);
 
         // Check if file exists
@@ -373,8 +405,8 @@ export const getKYCDocument = async (req, res) => {
         }
 
         // Set appropriate headers
-        res.setHeader('Content-Type', document.fileType);
-        res.setHeader('Content-Disposition', `inline; filename="${document.originalName}"`);
+        res.setHeader('Content-Type', document.fileType || 'application/octet-stream');
+        res.setHeader('Content-Disposition', `inline; filename="${document.originalName || document.name || 'document'}"`);
 
         // Send file
         res.sendFile(filePath);
@@ -395,7 +427,7 @@ export const updateKYCDocumentStatus = async (req, res) => {
         const { status } = req.body;
 
         // Validate inputs
-        const validDocTypes = ['governmentId', 'proofOfAddress', 'incomeProof'];
+        const validDocTypes = ['governmentId', 'proofOfAddress', 'incomeProof', 'nomineeId'];
         const validStatuses = ['pending', 'approved', 'rejected'];
 
         if (!validDocTypes.includes(documentType)) {
@@ -464,13 +496,11 @@ export const updateKYCDocumentStatus = async (req, res) => {
 
         // Check if all documents are approved to update overall KYC status
         const allDocuments = customer.kycDocuments;
-        const allApproved = allDocuments.governmentId?.status === 'approved' &&
-                          allDocuments.proofOfAddress?.status === 'approved' &&
-                          allDocuments.incomeProof?.status === 'approved';
-
-        const anyRejected = allDocuments.governmentId?.status === 'rejected' ||
-                           allDocuments.proofOfAddress?.status === 'rejected' ||
-                           allDocuments.incomeProof?.status === 'rejected';
+        const mainDocs = [allDocuments.governmentId, allDocuments.proofOfAddress, allDocuments.incomeProof];
+        if (allDocuments.nomineeId) mainDocs.push(allDocuments.nomineeId);
+        
+        const allApproved = mainDocs.every(doc => doc && doc.status === 'approved');
+        const anyRejected = mainDocs.some(doc => doc && doc.status === 'rejected');
 
         let overallKycStatus = 'pending';
         if (allApproved) {
@@ -582,7 +612,13 @@ export const updateCustomerOnboarding = async (req, res) => {
             city,
             state,
             zipCode,
-            country
+            country,
+            // Nominee Fields
+            nomineeName,
+            nomineeRelationship,
+            nomineeDob,
+            nomineeContact,
+            addNominee
         } = req.body;
 
         const customer = await User.findById(customerId);
@@ -622,6 +658,16 @@ export const updateCustomerOnboarding = async (req, res) => {
         if (zipCode) customer.address.zipCode = zipCode;
         if (country) customer.address.country = country;
 
+        // Update Nominee Details
+        // Always ensure nomineeDetails object exists if we are updating it or if addNominee is handled
+        if (!customer.nomineeDetails) customer.nomineeDetails = {};
+        
+        if (nomineeName) customer.nomineeDetails.name = nomineeName;
+        if (nomineeRelationship) customer.nomineeDetails.relationship = nomineeRelationship;
+        if (nomineeDob) customer.nomineeDetails.dateOfBirth = new Date(nomineeDob);
+        if (nomineeContact) customer.nomineeDetails.contact = nomineeContact;
+
+
         // Update Documents if files are uploaded
         if (req.files) {
             if (!customer.kycDocuments) customer.kycDocuments = {};
@@ -658,6 +704,37 @@ export const updateCustomerOnboarding = async (req, res) => {
             updateDoc('governmentId');
             updateDoc('proofOfAddress');
             updateDoc('incomeProof');
+            updateDoc('nomineeId');
+
+            // Handle otherDocuments (unchanged from previous step)
+            if (req.files.otherDocuments && req.files.otherDocuments.length > 0) {
+                if (!customer.kycDocuments.otherDocuments) {
+                    customer.kycDocuments.otherDocuments = [];
+                }
+
+                // Get names from body
+                let names = req.body.otherDocumentNames;
+                // Normalize to array (multer fields/body parsing might return string for single item)
+                if (names && !Array.isArray(names)) {
+                    names = [names];
+                }
+                if (!names) names = [];
+
+                req.files.otherDocuments.forEach((file, index) => {
+                    const docName = names[index] || file.originalname;
+                    customer.kycDocuments.otherDocuments.push({
+                        filename: file.filename,
+                        originalName: docName,
+                        uploadDate: new Date(),
+                        fileType: file.mimetype,
+                        fileSize: file.size,
+                        status: "pending"
+                    });
+                });
+                
+                // Reset overall status if new docs added
+                customer.kycStatus = "pending";
+            }
         }
 
         await customer.save();

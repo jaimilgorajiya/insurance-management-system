@@ -49,7 +49,7 @@ const CustomerDocuments = () => {
         }
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`${API_BASE_URL}/customer-onboarding/document/${customerId}/${doc.docTypeKey}`, {
+            const res = await fetch(`${API_BASE_URL}/customer-onboarding/document/${customerId}/${encodeURIComponent(doc.docTypeKey)}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!res.ok) throw new Error("Failed to load preview");
@@ -97,7 +97,7 @@ const CustomerDocuments = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`${API_BASE_URL}/customer-onboarding/document/${customerId}/${doc.docTypeKey}`, {
+            const res = await fetch(`${API_BASE_URL}/customer-onboarding/document/${customerId}/${encodeURIComponent(doc.docTypeKey)}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             

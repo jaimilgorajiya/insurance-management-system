@@ -64,7 +64,16 @@ const CustomerOnboarding = () => {
         },
         
         // Step 4: Policy Selection (empty for now)
-        selectedPolicy: null
+        selectedPolicy: null,
+
+        // Step 3 (Extras): Other Documents
+        otherDocuments: []
+    });
+
+    const [otherDocsModal, setOtherDocsModal] = useState({ 
+        isOpen: false, 
+        docName: '', 
+        file: null 
     });
 
     const steps = [
@@ -271,6 +280,15 @@ const CustomerOnboarding = () => {
             formDataToSubmit.append('zipCode', formData.zipCode);
             formDataToSubmit.append('country', formData.country);
             
+            // Nominee Details
+            formDataToSubmit.append('addNominee', formData.addNominee);
+            if (formData.addNominee) {
+                formDataToSubmit.append('nomineeName', formData.nomineeName);
+                formDataToSubmit.append('nomineeRelationship', formData.nomineeRelationship);
+                formDataToSubmit.append('nomineeDob', formData.nomineeDob);
+                formDataToSubmit.append('nomineeContact', formData.nomineeContact);
+            }
+
             // Add KYC documents
             if (formData.documents.governmentId) {
                 formDataToSubmit.append('governmentId', formData.documents.governmentId.file);
@@ -280,6 +298,9 @@ const CustomerOnboarding = () => {
             }
             if (formData.documents.incomeProof) {
                 formDataToSubmit.append('incomeProof', formData.documents.incomeProof.file);
+            }
+            if (formData.addNominee && formData.documents.nomineeId) {
+                formDataToSubmit.append('nomineeId', formData.documents.nomineeId.file);
             }
             
             // Add selected policy if any
@@ -621,7 +642,20 @@ const CustomerOnboarding = () => {
                     {/* Step 3: KYC Documents */}
                     {currentStep === 3 && (
                         <div className="form-step">
-                            <h2 className="step-title">KYC Documents</h2>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                <h2 className="step-title" style={{ margin: 0 }}>KYC Documents</h2>
+                                <button 
+                                    type="button"
+                                    onClick={() => setOtherDocsModal({ ...otherDocsModal, isOpen: true })}
+                                    style={{ 
+                                        backgroundColor: '#3b82f6', color: 'white', border: 'none', 
+                                        padding: '0.5rem 1rem', borderRadius: '0.5rem', cursor: 'pointer',
+                                        fontSize: '0.875rem', fontWeight: 500
+                                    }}
+                                >
+                                    + Upload other documents
+                                </button>
+                            </div>
                             <div className="documents-grid">
                                 {/* Government ID */}
                                 <div className="document-upload-section">
@@ -741,6 +775,86 @@ const CustomerOnboarding = () => {
                                     </div>
                                 )}
                             </div>
+
+                            {/* Extra Documents List */}
+                            {formData.otherDocuments.length > 0 && (
+                                <div style={{ marginTop: '2rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem' }}>
+                                    <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#0f172a', marginBottom: '1rem' }}>Additional Documents</h3>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1rem' }}>
+                                        {formData.otherDocuments.map((doc, idx) => (
+                                            <div key={idx} className="uploaded-file">
+                                                <span className="file-name" title={doc.name}>{doc.name}</span>
+                                                <span className="file-date">Uploaded: {doc.uploadDate}</span>
+                                                <button 
+                                                    className="view-btn"
+                                                    style={{ color: '#ef4444', borderColor: '#ef4444' }}
+                                                    onClick={() => {
+                                                        const newDocs = [...formData.otherDocuments];
+                                                        newDocs.splice(idx, 1);
+                                                        setFormData({ ...formData, otherDocuments: newDocs });
+                                                    }}
+                                                >
+                                                    Remove
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Other Documents Modal */}
+                            {otherDocsModal.isOpen && (
+                                <div style={{
+                                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                                    backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+                                }}>
+                                    <div style={{ backgroundColor: 'white', padding: '2rem', borderRadius: '1rem', width: '90%', maxWidth: '400px' }}>
+                                        <h3 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.5rem' }}>Upload Document</h3>
+                                        
+                                        <div className="form-group">
+                                            <label className="form-label">Document Name</label>
+                                            <input 
+                                                type="text" 
+                                                className="form-input" 
+                                                placeholder="e.g. Birth Certificate"
+                                                value={otherDocsModal.docName}
+                                                onChange={(e) => setOtherDocsModal({ ...otherDocsModal, docName: e.target.value })}
+                                            />
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label className="form-label">Select File</label>
+                                            <input 
+                                                type="file" 
+                                                className="file-input"
+                                                onChange={(e) => setOtherDocsModal({ ...otherDocsModal, file: e.target.files[0] })}
+                                            />
+                                        </div>
+
+                                        <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+                                            <button 
+                                                onClick={() => setOtherDocsModal({ isOpen: false, docName: '', file: null })}
+                                                style={{ flex: 1, padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #cbd5e1', backgroundColor: 'white', cursor: 'pointer' }}
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button 
+                                                onClick={() => {
+                                                    if (!otherDocsModal.docName || !otherDocsModal.file) return alert('Please fill in detail');
+                                                    setFormData({
+                                                        ...formData,
+                                                        otherDocuments: [...formData.otherDocuments, { name: otherDocsModal.docName, file: otherDocsModal.file, uploadDate: new Date().toLocaleDateString() }]
+                                                    });
+                                                    setOtherDocsModal({ isOpen: false, docName: '', file: null });
+                                                }}
+                                                style={{ flex: 1, padding: '0.75rem', borderRadius: '0.5rem', border: 'none', backgroundColor: '#3b82f6', color: 'white', cursor: 'pointer' }}
+                                            >
+                                                Upload
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -981,7 +1095,7 @@ const CustomerOnboarding = () => {
                                     </div>
                                 </div>
 
-                                {/* Contact Information Review */}
+                                {/* Configure Review */}
                                 <div className="review-section">
                                     <h3 className="review-section-title">Contact Information</h3>
                                     <div className="review-grid">
@@ -1006,6 +1120,31 @@ const CustomerOnboarding = () => {
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* Nominee Details Review */}
+                                {formData.addNominee && (
+                                    <div className="review-section">
+                                        <h3 className="review-section-title">Nominee Details</h3>
+                                        <div className="review-grid">
+                                            <div className="review-item">
+                                                <span className="review-label">Name:</span>
+                                                <span className="review-value">{formData.nomineeName}</span>
+                                            </div>
+                                            <div className="review-item">
+                                                <span className="review-label">Relationship:</span>
+                                                <span className="review-value">{formData.nomineeRelationship}</span>
+                                            </div>
+                                            <div className="review-item">
+                                                <span className="review-label">DOB:</span>
+                                                <span className="review-value">{formData.nomineeDob}</span>
+                                            </div>
+                                            <div className="review-item">
+                                                <span className="review-label">Contact:</span>
+                                                <span className="review-value">{formData.nomineeContact}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Policy Review */}
                                 <div className="review-section">

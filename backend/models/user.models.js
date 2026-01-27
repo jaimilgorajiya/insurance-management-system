@@ -35,6 +35,12 @@ const userSchema = new mongoose.Schema({
     annualIncome: {
         type: Number,
     },
+    nomineeDetails: {
+        name: { type: String, trim: true },
+        relationship: { type: String, trim: true },
+        dateOfBirth: { type: Date },
+        contact: { type: String, trim: true }
+    },
     // Contact information
     mobile: {
         type: String,
@@ -107,7 +113,31 @@ const userSchema = new mongoose.Schema({
                 enum: ["pending", "approved", "rejected"],
                 default: "pending"
             }
-        }
+        },
+        nomineeId: {
+            filename: String,
+            originalName: String,
+            uploadDate: Date,
+            fileType: String,
+            fileSize: Number,
+            status: {
+                type: String,
+                enum: ["pending", "approved", "rejected"],
+                default: "pending"
+            }
+        },
+        otherDocuments: [{
+            filename: String,
+            originalName: String,
+            uploadDate: Date,
+            fileType: String,
+            fileSize: Number,
+            status: {
+                type: String,
+                enum: ["pending", "approved", "rejected"],
+                default: "pending"
+            }
+        }]
     },
     // Policy information (for future use)
     selectedPolicy: {

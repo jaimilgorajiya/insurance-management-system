@@ -10,6 +10,7 @@ const EditCustomer = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [documentModal, setDocumentModal] = useState({ isOpen: false, document: null });
+    const [otherDocsModal, setOtherDocsModal] = useState({ isOpen: false, docName: '', file: null });
 
     // Form data state
     const [formData, setFormData] = useState({
@@ -32,15 +33,24 @@ const EditCustomer = () => {
         zipCode: '',
         country: '',
         
+        // Nominee Details
+        addNominee: false,
+        nomineeName: '',
+        nomineeRelationship: '',
+        nomineeDob: '',
+        nomineeContact: '',
+        
         // Step 3: KYC Documents
         documents: {
             governmentId: null,
             proofOfAddress: null,
-            incomeProof: null
+            incomeProof: null,
+            nomineeId: null
         },
         
         // Step 4: Policy Selection (empty for now)
-        selectedPolicy: null
+        selectedPolicy: null,
+        otherDocuments: []
     });
 
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -89,6 +99,13 @@ const EditCustomer = () => {
                 zipCode: customer.address?.zipCode || '',
                 country: customer.address?.country || '',
                 
+                // Nominee Details
+                addNominee: !!(customer.nomineeDetails && customer.nomineeDetails.name),
+                nomineeName: customer.nomineeDetails?.name || '',
+                nomineeRelationship: customer.nomineeDetails?.relationship || '',
+                nomineeDob: customer.nomineeDetails?.dateOfBirth ? customer.nomineeDetails.dateOfBirth.split('T')[0] : '',
+                nomineeContact: customer.nomineeDetails?.contact || '',
+
                 documents: {
                     governmentId: customer.kycDocuments?.governmentId ? { 
                         name: customer.kycDocuments.governmentId.originalName,
@@ -104,9 +121,21 @@ const EditCustomer = () => {
                         name: customer.kycDocuments.incomeProof.originalName,
                         existing: true,
                         uploadDate: new Date(customer.kycDocuments.incomeProof.uploadDate).toLocaleDateString()
+                    } : null,
+                    nomineeId: customer.kycDocuments?.nomineeId ? { 
+                        name: customer.kycDocuments.nomineeId.originalName,
+                        existing: true,
+                        uploadDate: new Date(customer.kycDocuments.nomineeId.uploadDate).toLocaleDateString()
                     } : null
                 },
-                selectedPolicy: customer.selectedPolicy || null
+                selectedPolicy: customer.selectedPolicy || null,
+                otherDocuments: customer.kycDocuments?.otherDocuments ? customer.kycDocuments.otherDocuments.map(doc => ({
+                    name: doc.originalName || doc.name,
+                    existing: true,
+                    uploadDate: new Date(doc.uploadDate).toLocaleDateString(),
+                    file: null, // No file object for existing docs
+                    ...doc
+                })) : []
             });
 
         } catch (error) {
@@ -153,9 +182,14 @@ const EditCustomer = () => {
 
     const validateStep3 = () => {
         // Validation passes if document exists (either new or pre-existing)
-        return formData.documents.governmentId && 
+        const basicDocs = formData.documents.governmentId && 
                formData.documents.proofOfAddress && 
                formData.documents.incomeProof;
+        
+        if (formData.addNominee) {
+            return basicDocs && formData.documents.nomineeId;
+        }
+        return basicDocs;
     };
 
     const canProceedToNext = () => {
@@ -290,16 +324,38 @@ const EditCustomer = () => {
             formDataToSubmit.append('state', formData.state);
             formDataToSubmit.append('zipCode', formData.zipCode);
             formDataToSubmit.append('country', formData.country);
+            
+            // Nominee Details
+            formDataToSubmit.append('addNominee', formData.addNominee);
+            if (formData.addNominee) {
+                formDataToSubmit.append('nomineeName', formData.nomineeName);
+                formDataToSubmit.append('nomineeRelationship', formData.nomineeRelationship);
+                formDataToSubmit.append('nomineeDob', formData.nomineeDob);
+                formDataToSubmit.append('nomineeContact', formData.nomineeContact);
+            }
 
-            // Add ONLY NEW documents
-            if (formData.documents.governmentId && formData.documents.governmentId.isNew) {
+            // Add documents if new files uploaded
+            if (formData.documents.governmentId && !formData.documents.governmentId.existing) {
                 formDataToSubmit.append('governmentId', formData.documents.governmentId.file);
             }
-            if (formData.documents.proofOfAddress && formData.documents.proofOfAddress.isNew) {
+            if (formData.documents.proofOfAddress && !formData.documents.proofOfAddress.existing) {
                 formDataToSubmit.append('proofOfAddress', formData.documents.proofOfAddress.file);
             }
-            if (formData.documents.incomeProof && formData.documents.incomeProof.isNew) {
+            if (formData.documents.incomeProof && !formData.documents.incomeProof.existing) {
                 formDataToSubmit.append('incomeProof', formData.documents.incomeProof.file);
+            }
+            if (formData.addNominee && formData.documents.nomineeId && !formData.documents.nomineeId.existing) {
+                 formDataToSubmit.append('nomineeId', formData.documents.nomineeId.file);
+            }
+
+            // Add Other Documents
+            if (formData.otherDocuments && formData.otherDocuments.length > 0) {
+                formData.otherDocuments.forEach((doc) => {
+                    if (doc.isNew) {
+                        formDataToSubmit.append('otherDocuments', doc.file);
+                        formDataToSubmit.append('otherDocumentNames', doc.name);
+                    }
+                });
             }
 
             const token = localStorage.getItem('token');
@@ -559,6 +615,68 @@ const EditCustomer = () => {
                                         onChange={(e) => handleInputChange('country', e.target.value)}
                                     />
                                 </div>
+
+                                {/* Nominee Section */}
+                                <div className="form-group form-group-full" style={{ marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '1rem', fontWeight: 600, color: '#0f172a' }}>
+                                        <input 
+                                            type="checkbox" 
+                                            checked={formData.addNominee}
+                                            onChange={(e) => handleInputChange('addNominee', e.target.checked)}
+                                            style={{ width: '1.25rem', height: '1.25rem' }}
+                                        />
+                                        Add Nominee Details
+                                    </label>
+                                </div>
+
+                                {formData.addNominee && (
+                                    <>
+                                        <div className="form-group">
+                                            <label className="form-label">Nominee Name</label>
+                                            <input
+                                                type="text"
+                                                className="form-input"
+                                                placeholder="Full Name"
+                                                value={formData.nomineeName}
+                                                onChange={(e) => handleInputChange('nomineeName', e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label">Relationship</label>
+                                            <select
+                                                className="form-select"
+                                                value={formData.nomineeRelationship}
+                                                onChange={(e) => handleInputChange('nomineeRelationship', e.target.value)}
+                                            >
+                                                <option value="">Select Relationship</option>
+                                                <option value="Spouse">Spouse</option>
+                                                <option value="Child">Child</option>
+                                                <option value="Parent">Parent</option>
+                                                <option value="Sibling">Sibling</option>
+                                                <option value="Other">Other</option>
+                                            </select>
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label">Nominee DOB</label>
+                                            <input
+                                                type="date"
+                                                className="form-input"
+                                                value={formData.nomineeDob}
+                                                onChange={(e) => handleInputChange('nomineeDob', e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label">Nominee Contact</label>
+                                            <input
+                                                type="tel"
+                                                className="form-input"
+                                                placeholder="Phone Number"
+                                                value={formData.nomineeContact}
+                                                onChange={(e) => handleInputChange('nomineeContact', e.target.value)}
+                                            />
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
                     )}
@@ -566,11 +684,20 @@ const EditCustomer = () => {
                     {/* Step 3: KYC Documents */}
                     {currentStep === 3 && (
                         <div className="form-step">
-                            <h2 className="step-title">KYC Documents</h2>
-                            <p style={{marginBottom: '1rem', color: '#64748b'}}>
-                                Documents cannot be updated here in basic edit mode. 
-                                Please contact admin for document changes or see document section in details.
-                            </p>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                <h2 className="step-title" style={{ margin: 0 }}>KYC Documents</h2>
+                                <button 
+                                    type="button"
+                                    onClick={() => setOtherDocsModal({ ...otherDocsModal, isOpen: true })}
+                                    style={{ 
+                                        backgroundColor: '#3b82f6', color: 'white', border: 'none', 
+                                        padding: '0.5rem 1rem', borderRadius: '0.5rem', cursor: 'pointer',
+                                        fontSize: '0.875rem', fontWeight: 500
+                                    }}
+                                >
+                                    + Upload other documents
+                                </button>
+                            </div>
                             <div className="documents-grid">
                                 {['governmentId', 'proofOfAddress', 'incomeProof'].map((docType) => (
                                     <div key={docType} className="document-upload-section">
@@ -600,7 +727,154 @@ const EditCustomer = () => {
                                         )}
                                     </div>
                                 ))}
+                                {formData.addNominee && (
+                                    <div className="document-upload-section">
+                                        <div className="upload-area">
+                                            <UploadIcon />
+                                            <h3 className="upload-title">Nominee ID Proof</h3>
+                                            <p className="upload-subtitle">Drag and drop or click to upload</p>
+                                            <input
+                                                type="file"
+                                                accept="image/*,.pdf"
+                                                onChange={(e) => handleDocumentUpload('nomineeId', e.target.files[0])}
+                                                className="file-input"
+                                                id="nomineeId"
+                                            />
+                                            <label htmlFor="nomineeId" className="upload-btn">Select File</label>
+                                        </div>
+                                        {formData.documents.nomineeId && (
+                                            <div className="uploaded-file">
+                                                <span className="file-name">{formData.documents.nomineeId.name}</span>
+                                                {formData.documents.nomineeId.uploadDate && (
+                                                    <span className="file-date">Uploaded: {formData.documents.nomineeId.uploadDate}</span>
+                                                )}
+                                                {formData.documents.nomineeId.existing && (
+                                                    <button 
+                                                        className="view-btn"
+                                                        onClick={() => {
+                                                             window.open(`${import.meta.env.VITE_API_BASE_URL}/customer-onboarding/document/${customerId}/nomineeId`, '_blank');
+                                                        }}
+                                                    >
+                                                        View
+                                                    </button>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
+
+                            {/* Extra Documents List */}
+                            {formData.otherDocuments.length > 0 && (
+                                <div style={{ marginTop: '2rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem' }}>
+                                    <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#0f172a', marginBottom: '1rem' }}>Additional Documents</h3>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1rem' }}>
+                                        {formData.otherDocuments.map((doc, idx) => (
+                                            <div key={idx} className="uploaded-file" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '0.5rem', marginTop: 0 }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                                                    <span className="file-name" title={doc.name} style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '70%' }}>
+                                                        {doc.name}
+                                                    </span>
+                                                    <button 
+                                                        className="view-btn"
+                                                        style={{ color: '#ef4444', borderColor: '#ef4444', padding: '0.25rem 0.5rem', margin: 0 }}
+                                                        onClick={() => {
+                                                            const newDocs = [...formData.otherDocuments];
+                                                            newDocs.splice(idx, 1);
+                                                            setFormData({ ...formData, otherDocuments: newDocs });
+                                                        }}
+                                                    >
+                                                        Remove
+                                                    </button>
+                                                </div>
+                                                <span className="file-date" style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>
+                                                    {doc.existing ? `Existing • ${doc.uploadDate}` : `New • ${doc.uploadDate}`}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Other Documents Modal */}
+                            {otherDocsModal.isOpen && (
+                                <div style={{
+                                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                                    backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+                                }}>
+                                    <div style={{ backgroundColor: 'white', padding: '2rem', borderRadius: '1rem', width: '90%', maxWidth: '400px' }}>
+                                        <h3 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.5rem' }}>Upload Document</h3>
+                                        
+                                        <div className="form-group">
+                                            <label className="form-label">Document Name</label>
+                                            <input 
+                                                type="text" 
+                                                className="form-input" 
+                                                placeholder="e.g. Birth Certificate"
+                                                value={otherDocsModal.docName}
+                                                onChange={(e) => setOtherDocsModal({ ...otherDocsModal, docName: e.target.value })}
+                                            />
+                                        </div>
+
+                                        <div className="document-upload-section" style={{ marginTop: '1rem' }}>
+                                            <div className="upload-area">
+                                                <UploadIcon />
+                                                <h3 className="upload-title">Upload File</h3>
+                                                <p className="upload-subtitle">Drag and drop or click to upload</p>
+                                                <input
+                                                    type="file"
+                                                    onChange={(e) => setOtherDocsModal({ ...otherDocsModal, file: e.target.files[0] })}
+                                                    className="file-input"
+                                                    id="otherDoc"
+                                                />
+                                                <label htmlFor="otherDoc" className="upload-btn">Select File</label>
+                                            </div>
+                                            {otherDocsModal.file && (
+                                                <div className="uploaded-file">
+                                                    <span className="file-name">{otherDocsModal.file.name}</span>
+                                                    <button 
+                                                        onClick={() => setOtherDocsModal({ ...otherDocsModal, file: null })}
+                                                        style={{ 
+                                                            marginLeft: 'auto', background: 'none', border: 'none', 
+                                                            color: '#ef4444', cursor: 'pointer', fontSize: '0.875rem' 
+                                                        }}
+                                                    >
+                                                        Remove
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+                                            <button 
+                                                onClick={() => setOtherDocsModal({ isOpen: false, docName: '', file: null })}
+                                                style={{ flex: 1, padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #cbd5e1', backgroundColor: 'white', cursor: 'pointer' }}
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button 
+                                                onClick={() => {
+                                                    if (!otherDocsModal.docName || !otherDocsModal.file) return alert('Please fill in detail');
+                                                    setFormData({
+                                                        ...formData,
+                                                        otherDocuments: [...formData.otherDocuments, { 
+                                                            name: otherDocsModal.docName, 
+                                                            file: otherDocsModal.file, 
+                                                            uploadDate: new Date().toLocaleDateString(),
+                                                            existing: false,
+                                                            isNew: true
+                                                        }]
+                                                    });
+                                                    setOtherDocsModal({ isOpen: false, docName: '', file: null });
+                                                }}
+                                                style={{ flex: 1, padding: '0.75rem', borderRadius: '0.5rem', border: 'none', backgroundColor: '#3b82f6', color: 'white', cursor: 'pointer' }}
+                                            >
+                                                Upload
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
 

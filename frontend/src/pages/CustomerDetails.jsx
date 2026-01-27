@@ -85,7 +85,7 @@ const CustomerDetails = () => {
     const fetchDocument = async (documentType, filename) => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`${API_BASE_URL}/customer-onboarding/document/${id}/${documentType}`, {
+            const res = await fetch(`${API_BASE_URL}/customer-onboarding/document/${id}/${encodeURIComponent(documentType)}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -471,20 +471,26 @@ const CustomerDetails = () => {
                 <div style={{ marginTop: '2rem' }}>
                     <h2 className="step-title">KYC Documents</h2>
                     <div className="documents-grid">
-                        {['governmentId', 'proofOfAddress', 'incomeProof'].map(docType => {
+                        {/* Standard Documents */}
+                        {['governmentId', 'proofOfAddress', 'incomeProof', 'nomineeId'].map(docType => {
                             const doc = customer.kycDocuments?.[docType];
                             if (!doc) return null;
+
+                            const titles = {
+                                governmentId: 'Government ID',
+                                proofOfAddress: 'Proof of Address',
+                                incomeProof: 'Income Proof',
+                                nomineeId: 'Nominee ID'
+                            };
 
                             return (
                                 <div key={docType} className="document-upload-section" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <div>
                                         <h3 className="upload-title" style={{ marginTop: 0 }}>
-                                            {docType === 'governmentId' ? 'Government ID' : 
-                                             docType === 'proofOfAddress' ? 'Proof of Address' : 'Income Proof'}
+                                            {titles[docType]}
                                         </h3>
                                         <div className="file-name">{doc.originalName}</div>
                                         <div className="file-date">Uploaded: {new Date(doc.uploadDate).toLocaleDateString()}</div>
-                                        {/* Status badge for document can remain if desired, or be removed if irrelevant */}
                                     </div>
                                     <div style={{ display: 'flex', gap: '0.5rem', flexDirection: 'column', alignItems: 'flex-end' }}>
                                         <button 
@@ -498,6 +504,28 @@ const CustomerDetails = () => {
                                 </div>
                             );
                         })}
+
+                         {/* Other Documents */}
+                         {customer.kycDocuments?.otherDocuments?.map((doc, index) => (
+                            <div key={`other_${index}`} className="document-upload-section" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div>
+                                    <h3 className="upload-title" style={{ marginTop: 0 }}>
+                                        {doc.name || `Other Document ${index + 1}`}
+                                    </h3>
+                                    <div className="file-name">{doc.originalName || doc.name}</div>
+                                    <div className="file-date">Uploaded: {new Date(doc.uploadDate).toLocaleDateString()}</div>
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.5rem', flexDirection: 'column', alignItems: 'flex-end' }}>
+                                    <button 
+                                        className="btn-outline" 
+                                        onClick={() => fetchDocument(`other/${doc._id}`, doc.originalName || doc.name)}
+                                        style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}
+                                    >
+                                        View Document
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
 
