@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { 
     registerAgent, loginAgent, logoutAgent,
-    getAllAgents, updateAgent, deleteAgent 
+    getAllAgents, updateAgent, deleteAgent,
+    getMyCommissions
 } from "../controllers/agent.controllers.js";
 import { verifyJWT, authorizeRoles } from "../middlewares/auth.middleware.js";
 
@@ -13,6 +14,9 @@ router.post("/logout", logoutAgent);
 
 // --- AGENT SELF-REGISTRATION ---
 router.post("/register", registerAgent);
+
+// --- AGENT ACTIONS ---
+router.get("/my-commissions", verifyJWT, authorizeRoles("agent"), getMyCommissions);
 
 // --- AGENT MANAGEMENT (Admin Access) ---
 router.get("/all", verifyJWT, authorizeRoles("admin"), getAllAgents);

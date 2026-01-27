@@ -17,6 +17,9 @@ import Documents from './pages/Documents';
 import CustomerDocuments from './pages/CustomerDocuments';
 import BuyPolicy from './pages/BuyPolicy';
 import ProtectedRoute from './components/ProtectedRoute';
+import { ClaimsPlaceholder, ReportsPlaceholder } from './pages/Placeholders';
+import AccessDenied from './pages/AccessDenied';
+import AgentCommission from './pages/AgentCommission';
 
 function App() {
   return (
@@ -28,15 +31,23 @@ function App() {
         {/* Redirect root to login */}
         <Route path="/" element={<Navigate to="/login" replace />} />
 
-        {/* Protected Routes */}
-        <Route element={<ProtectedRoute />}>
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          {/* <Route path="/admin/users" element={<UsersAndRoles />} /> */}
+        {/* Access Denied Route */}
+        <Route path="/access-denied" element={<AccessDenied />} />
+
+        {/* Protected Routes - Common for Admin and Agent */}
+        <Route element={<ProtectedRoute allowedRoles={['admin', 'agent']} />}>
           <Route path="/admin/customers" element={<Customers />} />
           <Route path="/admin/customers/create" element={<CustomerOnboarding />} />
           <Route path="/admin/customers/edit/:id" element={<EditCustomer />} />
           <Route path="/admin/customers/:id" element={<CustomerDetails />} />
           <Route path="/admin/customers/:customerId/buy-policy" element={<BuyPolicy />} />
+          <Route path="/admin/claims" element={<ClaimsPlaceholder />} />
+          <Route path="/admin/documents/customers/:customerId" element={<CustomerDocuments />} />
+        </Route>
+
+        {/* Admin Only Routes */}
+        <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/agents" element={<Agents />} />
           <Route path="/admin/agents/create" element={<EditAgent />} />
           <Route path="/admin/agents/edit/:id" element={<EditAgent />} />
@@ -46,8 +57,17 @@ function App() {
           <Route path="/admin/providers" element={<Providers />} />
           <Route path="/admin/policies/:id" element={<PolicyDetails />} />
           <Route path="/admin/documents" element={<Documents />} />
-          <Route path="/admin/documents/customers/:customerId" element={<CustomerDocuments />} />
+          <Route path="/admin/reports" element={<ReportsPlaceholder />} />
+        </Route>
+
+        {/* Agent Only Routes */}
+        <Route element={<ProtectedRoute allowedRoles={['agent']} />}>
           <Route path="/agent/dashboard" element={<AgentDashboard />} />
+          <Route path="/agent/commission" element={<AgentCommission />} />
+        </Route>
+
+        {/* Customer Only Routes */}
+        <Route element={<ProtectedRoute allowedRoles={['customer']} />}>
           <Route path="/customer/dashboard" element={<CustomerDashboard />} />
         </Route>
         

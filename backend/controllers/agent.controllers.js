@@ -95,3 +95,46 @@ export const deleteAgent = async (req, res) => {
         res.status(200).json({ message: "Agent deleted successfully" });
     } catch (e) { res.status(500).json({ message: e.message }); }
 };
+
+export const getMyCommissions = async (req, res) => {
+    try {
+        const agentId = req.user._id;
+
+        // Find all customers who have policies purchased through this agent
+        const customers = await User.find({
+            "purchasedPolicies.agentId": agentId
+        }).populate("purchasedPolicies.policy");
+
+        let totalEarnings = 0;
+        const sales = [];
+
+        customers.forEach(customer => {
+            customer.purchasedPolicies.forEach(purchase => {
+                if (purchase.agentId?.toString() === agentId.toString()) {
+                    const commissionPercent = purchase.policy?.agentCommission || 0;
+                    const premium = purchase.policy?.premiumAmount || 0;
+                    const earned = (commissionPercent / 100) * premium;
+                    
+                    totalEarnings += earned;
+                    sales.push({
+                        customerName: customer.name,
+                        policyName: purchase.policy?.policyName,
+                        premiumAmount: premium,
+                        commissionPercentage: commissionPercent,
+                        earnedAmount: earned,
+                        purchaseDate: purchase.purchaseDate
+                    });
+                }
+            });
+        });
+
+        res.status(200).json({
+            success: true,
+            totalEarnings,
+            totalSales: sales.length,
+            sales
+        });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+};

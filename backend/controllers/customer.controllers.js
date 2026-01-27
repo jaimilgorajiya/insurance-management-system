@@ -69,6 +69,8 @@ export const getCustomers = async (req, res) => {
         const query = { role: "customer" };
         if (req.user.role === "customer") {
             query.createdBy = req.user._id;
+        } else if (req.user.role === "agent") {
+            query.assignedAgentId = req.user._id;
         }
 
         // Filtering
@@ -113,6 +115,8 @@ export const updateCustomer = async (req, res) => {
         const query = { _id: id, role: "customer" };
         if (req.user.role === "customer") {
             query.createdBy = req.user._id;
+        } else if (req.user.role === "agent") {
+            query.assignedAgentId = req.user._id;
         }
         
         let customer = await User.findOne(query);
@@ -173,7 +177,8 @@ export const updateCustomer = async (req, res) => {
                             policy: selectedPolicy,
                             purchaseDate: new Date(),
                             status: 'active',
-                            policyDocument: relativePath
+                            policyDocument: relativePath,
+                            agentId: req.user.role === 'agent' ? req.user._id : (customer.assignedAgentId || null)
                         }
                     };
 
@@ -220,6 +225,8 @@ export const deleteCustomer = async (req, res) => {
         const query = { _id: req.params.id, role: "customer" };
         if (req.user.role === "customer") {
             query.createdBy = req.user._id;
+        } else if (req.user.role === "agent") {
+            query.assignedAgentId = req.user._id;
         }
 
         const customer = await User.findOneAndDelete(query);

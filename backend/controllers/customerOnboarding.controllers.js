@@ -207,7 +207,8 @@ export const onboardCustomer = async (req, res) => {
             kycStatus: "pending",
             onboardingCompleted: true,
             onboardingCompletedAt: new Date(),
-            createdBy: req.user._id
+            createdBy: req.user._id,
+            assignedAgentId: req.user.role === 'agent' ? req.user._id : null
         });
 
         await newCustomer.save();
@@ -286,10 +287,17 @@ export const getKYCDocument = async (req, res) => {
         }
 
         // Check if user has permission to view this document
-        if (req.user.role !== 'admin' && req.user._id.toString() !== customerId) {
+        if (req.user.role === 'agent') {
+            if (customer.assignedAgentId?.toString() !== req.user._id.toString()) {
+                return res.status(403).json({
+                    success: false,
+                    message: "You do not have permission to access this data."
+                });
+            }
+        } else if (req.user.role !== 'admin' && req.user._id.toString() !== customerId) {
             return res.status(403).json({
                 success: false,
-                message: "Access denied"
+                message: "You do not have permission to access this data."
             });
         }
 
@@ -329,7 +337,7 @@ export const getKYCDocument = async (req, res) => {
     }
 };
 
-// Update KYC document status (Admin only)
+// Update KYC document status (Admin/Agent only)
 export const updateKYCDocumentStatus = async (req, res) => {
     try {
         const { customerId, documentType } = req.params;
@@ -350,6 +358,22 @@ export const updateKYCDocumentStatus = async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message: "Invalid status. Must be 'pending', 'approved', or 'rejected'"
+            });
+        }
+
+        // Check permissions
+        const customerToUpdate = await User.findById(customerId);
+        if (!customerToUpdate) {
+            return res.status(404).json({
+                success: false,
+                message: "Customer not found"
+            });
+        }
+
+        if (req.user.role === 'agent' && customerToUpdate.assignedAgentId?.toString() !== req.user._id.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: "You do not have permission to access this data."
             });
         }
 
@@ -416,14 +440,6 @@ export const getCustomerOnboardingDetails = async (req, res) => {
     try {
         const { customerId } = req.params;
 
-        // Check permissions
-        if (req.user.role !== 'admin' && req.user._id.toString() !== customerId) {
-            return res.status(403).json({
-                success: false,
-                message: "Access denied"
-            });
-        }
-
         const customer = await User.findById(customerId)
             .select('-password')
             .populate({
@@ -440,10 +456,26 @@ export const getCustomerOnboardingDetails = async (req, res) => {
                     { path: 'provider' }
                 ]
             });
+
         if (!customer) {
             return res.status(404).json({
                 success: false,
                 message: "Customer not found"
+            });
+        }
+
+        // Check permissions
+        if (req.user.role === 'agent') {
+            if (customer.assignedAgentId?.toString() !== req.user._id.toString()) {
+                return res.status(403).json({
+                    success: false,
+                    message: "You do not have permission to access this data."
+                });
+            }
+        } else if (req.user.role !== 'admin' && req.user._id.toString() !== customerId) {
+            return res.status(403).json({
+                success: false,
+                message: "You do not have permission to access this data."
             });
         }
 
@@ -490,6 +522,14 @@ export const updateCustomerOnboarding = async (req, res) => {
             return res.status(404).json({
                 success: false,
                 message: "Customer not found"
+            });
+        }
+
+        // Check permissions
+        if (req.user.role === 'agent' && customer.assignedAgentId?.toString() !== req.user._id.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: "You do not have permission to access this data."
             });
         }
 

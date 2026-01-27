@@ -14,7 +14,7 @@ router.use(verifyJWT);
 
 // Admin only routes
 router.route("/")
-    .get(authorizeRoles("admin"), getPolicyTypes)
+    .get(authorizeRoles("admin", "agent"), getPolicyTypes)
     .post(authorizeRoles("admin"), createPolicyType);
 
 router.route("/:id")

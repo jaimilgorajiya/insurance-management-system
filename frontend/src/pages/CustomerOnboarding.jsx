@@ -143,7 +143,7 @@ const CustomerOnboarding = () => {
             case 1: return validateStep1();
             case 2: return validateStep2();
             case 3: return validateStep3();
-            case 4: return !!formData.selectedPolicy; // Policy step is no longer optional
+            case 4: return true; // Policy selection is optional
             default: return false;
         }
     };
@@ -211,8 +211,13 @@ const CustomerOnboarding = () => {
     };
 
     const handlePolicySelect = (policy) => {
-        setFormData(prev => ({ ...prev, selectedPolicy: policy._id }));
-        setSelectedPolicyDetails(policy);
+        if (formData.selectedPolicy === policy._id) {
+            setFormData(prev => ({ ...prev, selectedPolicy: null }));
+            setSelectedPolicyDetails(null);
+        } else {
+            setFormData(prev => ({ ...prev, selectedPolicy: policy._id }));
+            setSelectedPolicyDetails(policy);
+        }
     };
 
     const nextStep = () => {
@@ -270,9 +275,7 @@ const CustomerOnboarding = () => {
             }
             
             // Add selected policy if any
-            if (formData.selectedPolicy) {
-                formDataToSubmit.append('selectedPolicy', formData.selectedPolicy);
-            }
+            if (formData.selectedPolicy) formDataToSubmit.append('selectedPolicy', formData.selectedPolicy);
             
             console.log('Submitting onboarding data...');
             
@@ -643,12 +646,12 @@ const CustomerOnboarding = () => {
                     {/* Step 4: Select Policy */}
                     {currentStep === 4 && (
                         <div className="form-step">
-                            <h2 className="step-title">Select Policy</h2>
+                            <h2 className="step-title">Select Policy (Optional)</h2>
 
                             {/* Policy Type Filter */}
                             <div className="policy-type-filter" style={{ marginBottom: '2rem' }}>
                                 <label className="form-label" style={{ marginBottom: '0.5rem', display: 'block' }}>
-                                    Filter by Policy Type <span style={{ color: '#ef4444' }}>*</span>
+                                    Filter by Policy Type
                                 </label>
                                 <select 
                                     className="form-select"
@@ -916,7 +919,7 @@ const CustomerOnboarding = () => {
                                         </div>
                                     ) : (
                                         <div className="review-item">
-                                            <span className="review-value" style={{ color: '#ef4444' }}>No policy selected</span>
+                                            <span className="review-value" style={{ color: '#64748b' }}>Skipped (No policy selected)</span>
                                         </div>
                                     )}
                                 </div>

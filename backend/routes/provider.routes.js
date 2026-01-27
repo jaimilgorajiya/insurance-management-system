@@ -6,14 +6,13 @@ const router = Router();
 
 // Protect all routes
 router.use(verifyJWT);
-router.use(authorizeRoles("admin"));
 
 router.route("/")
-    .get(getProviders)
-    .post(createProvider);
+    .get(authorizeRoles("admin", "agent"), getProviders)
+    .post(authorizeRoles("admin"), createProvider);
 
 router.route("/:id")
-    .put(updateProvider)
-    .delete(deleteProvider);
+    .put(authorizeRoles("admin"), updateProvider)
+    .delete(authorizeRoles("admin"), deleteProvider);
 
 export default router;

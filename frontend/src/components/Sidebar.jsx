@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   ShieldLogo, DashboardIcon, UsersIcon, CustomersIcon, 
   PoliciesIcon, AgentsIcon, ClaimsIcon, DocumentsIcon, 
-  NotificationsIcon, ReportsIcon, LogoutIcon, MenuIcon, CloseIcon
+  NotificationsIcon, ReportsIcon, LogoutIcon, MenuIcon, CloseIcon, CommissionIcon
 } from './LayoutIcons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './Layout.css';
@@ -13,7 +13,9 @@ const Sidebar = ({ collapsed, toggleSidebar }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const menuItems = [
+  const userRole = localStorage.getItem('userRole');
+
+  const adminMenuItems = [
     { label: 'Dashboard', icon: <DashboardIcon />, path: '/admin/dashboard' },
     { label: 'Users & Roles', icon: <UsersIcon />, path: '/admin/users' },
     { label: 'Customers', icon: <CustomersIcon />, path: '/admin/customers' },
@@ -24,6 +26,15 @@ const Sidebar = ({ collapsed, toggleSidebar }) => {
     { label: 'Notifications', icon: <NotificationsIcon />, path: '/admin/notifications' },
     { label: 'Reports', icon: <ReportsIcon />, path: '/admin/reports' },
   ];
+
+  const agentMenuItems = [
+    { label: 'Dashboard', icon: <DashboardIcon />, path: '/agent/dashboard' },
+    { label: 'My Customers', icon: <CustomersIcon />, path: '/admin/customers' },
+    { label: 'Claims', icon: <ClaimsIcon />, path: '/admin/claims' },
+    { label: 'Commission', icon: <CommissionIcon />, path: '/agent/commission' },
+  ];
+
+  const menuItems = userRole === 'admin' ? adminMenuItems : agentMenuItems;
 
   const handleLogout = async () => {
     const isConfirmed = await showConfirmAction(

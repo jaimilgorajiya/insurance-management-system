@@ -175,6 +175,7 @@ const CustomerDetails = () => {
                             KYC: {capitalize(customer.kycStatus)}
                         </span>
                         
+                        {(localStorage.getItem('userRole') === 'admin' || localStorage.getItem('userRole') === 'agent') && (
                             <div style={{ display: 'flex', gap: '0.5rem', marginLeft: '1rem' }}>
                                 <button 
                                     className="btn-primary"
@@ -193,6 +194,7 @@ const CustomerDetails = () => {
                                     Reject KYC
                                 </button>
                             </div>
+                        )}
                     </div>
                 </div>
 
@@ -225,6 +227,14 @@ const CustomerDetails = () => {
                                 <span className="review-label">Annual Income</span>
                                 <span className="review-value">${customer.annualIncome}</span>
                             </div>
+                            {customer.assignedAgentId && (
+                                <div className="review-item">
+                                    <span className="review-label">Assigned Agent</span>
+                                    <span className="review-value">
+                                        {customer.assignedAgentId.name || 'N/A'} ({customer.assignedAgentId.email || 'N/A'})
+                                    </span>
+                                </div>
+                            )}
                         </div>
                     </div>
 

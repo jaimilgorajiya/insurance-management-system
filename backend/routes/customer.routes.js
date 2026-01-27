@@ -14,10 +14,10 @@ router.post("/logout", logoutCustomer);
 // --- CUSTOMER SELF-REGISTRATION ---
 router.post("/register", createCustomer);
 
-// --- CUSTOMER MANAGEMENT (Admin Access) ---
-router.get("/all", verifyJWT, authorizeRoles("admin"), getCustomers);
-router.put("/update/:id", verifyJWT, authorizeRoles("admin"), updateCustomer);
-router.delete("/delete/:id", verifyJWT, authorizeRoles("admin"), deleteCustomer);
+// --- CUSTOMER MANAGEMENT (Admin/Agent Access) ---
+router.get("/all", verifyJWT, authorizeRoles("admin", "agent"), getCustomers);
+router.put("/update/:id", verifyJWT, authorizeRoles("admin", "agent"), updateCustomer);
+router.delete("/delete/:id", verifyJWT, authorizeRoles("admin", "agent"), deleteCustomer);
 
 // --- SUB-CUSTOMER MANAGEMENT (Customer Access) ---
 router.post("/create", verifyJWT, authorizeRoles("customer", "admin"), createCustomer);

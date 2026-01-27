@@ -131,8 +131,16 @@ const userSchema = new mongoose.Schema({
         },
         policyDocument: {  // Path to the generated PDF
             type: String
+        },
+        agentId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User"
         }
     }],
+    assignedAgentId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User"
+    },
     password: {
         type: String,
         required: true,

@@ -15,10 +15,10 @@ const router = Router();
 router.use(verifyJWT);
 
 // Policy Summary Stats
-router.route("/stats/summary").get(getPolicySummary);
+router.route("/stats/summary").get(authorizeRoles("admin", "agent"), getPolicySummary);
 
 router.route("/")
-    .get(getPolicies)
+    .get(authorizeRoles("admin", "agent"), getPolicies)
     .post(authorizeRoles("admin"), createPolicy);
 
 router.route("/:id")
