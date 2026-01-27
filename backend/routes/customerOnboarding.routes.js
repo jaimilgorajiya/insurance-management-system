@@ -7,7 +7,7 @@ import {
     getCustomerOnboardingDetails,
     updateCustomerOnboarding
 } from "../controllers/customerOnboarding.controllers.js";
-import { verifyJWT, authorizeRoles } from "../middlewares/auth.middleware.js";
+import { verifyJWT, authorizeRoles, checkPermission } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
@@ -16,6 +16,7 @@ const router = Router();
 router.post("/onboard", 
     verifyJWT, 
     authorizeRoles("admin", "agent"),
+    checkPermission("customers", "create"),
     upload.fields([
         { name: 'governmentId', maxCount: 1 },
         { name: 'proofOfAddress', maxCount: 1 },
@@ -36,6 +37,7 @@ router.get("/document/:customerId/:documentType",
 router.patch("/document-status/:customerId/:documentType", 
     verifyJWT, 
     authorizeRoles("admin", "agent"),
+    checkPermission("customers", "edit"),
     updateKYCDocumentStatus
 );
 
@@ -43,13 +45,14 @@ router.patch("/document-status/:customerId/:documentType",
 router.get("/details/:customerId", 
     verifyJWT, 
     authorizeRoles("admin", "agent", "customer"),
+    checkPermission("customers", "view"),
     getCustomerOnboardingDetails
 );
 
-// Update Customer Onboarding Details (including files)
 router.put("/update/:customerId",
     verifyJWT,
     authorizeRoles("admin", "agent"),
+    checkPermission("customers", "edit"),
     upload.fields([
         { name: 'governmentId', maxCount: 1 },
         { name: 'proofOfAddress', maxCount: 1 },

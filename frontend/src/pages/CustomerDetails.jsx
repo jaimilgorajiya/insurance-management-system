@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { showSuccessAlert, showErrorAlert, showConfirmDelete } from '../utils/swalUtils';
+import { hasPermission } from '../utils/permissionUtils';
 import Swal from 'sweetalert2';
 
 const CustomerDetails = () => {
@@ -175,7 +176,7 @@ const CustomerDetails = () => {
                             KYC: {capitalize(customer.kycStatus)}
                         </span>
                         
-                        {(localStorage.getItem('userRole') === 'admin' || localStorage.getItem('userRole') === 'agent') && (
+                        {(localStorage.getItem('userRole') === 'admin' || (localStorage.getItem('userRole') === 'agent' && hasPermission('customers', 'edit'))) && (
                             <div style={{ display: 'flex', gap: '0.5rem', marginLeft: '1rem' }}>
                                 <button 
                                     className="btn-primary"
@@ -273,13 +274,15 @@ const CustomerDetails = () => {
                 <div className="review-section" style={{ marginTop: '2rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                         <h3 className="review-section-title" style={{ marginBottom: 0 }}>Purchased Policy Details</h3>
-                        <button 
-                            className="btn-primary" 
-                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}
-                            onClick={() => navigate(`/admin/customers/${customer._id}/buy-policy`)}
-                        >
-                            + Buy Policy
-                        </button>
+                        {(localStorage.getItem('userRole') === 'admin' || (localStorage.getItem('userRole') === 'agent' && hasPermission('customers', 'edit'))) && (
+                            <button 
+                                className="btn-primary" 
+                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}
+                                onClick={() => navigate(`/admin/customers/${customer._id}/buy-policy`)}
+                            >
+                                + Buy Policy
+                            </button>
+                        )}
                     </div>
                     {customer.purchasedPolicies && customer.purchasedPolicies.length > 0 ? (
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: '1.5rem' }}>

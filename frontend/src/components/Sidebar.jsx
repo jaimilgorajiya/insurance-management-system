@@ -7,6 +7,7 @@ import {
 import { useNavigate, useLocation } from 'react-router-dom';
 import './Layout.css';
 import { showSuccessAlert, showConfirmAction } from '../utils/swalUtils';
+import { hasPermission } from '../utils/permissionUtils';
 import Swal from 'sweetalert2';
 
 const Sidebar = ({ collapsed, toggleSidebar }) => {
@@ -34,7 +35,14 @@ const Sidebar = ({ collapsed, toggleSidebar }) => {
     { label: 'Commission', icon: <CommissionIcon />, path: '/agent/commission' },
   ];
 
-  const menuItems = userRole === 'admin' ? adminMenuItems : agentMenuItems;
+  const menuItems = userRole === 'admin' 
+    ? adminMenuItems 
+    : agentMenuItems.filter(item => {
+        if (item.label === 'My Customers') return hasPermission('customers', 'view');
+        if (item.label === 'Claims') return hasPermission('claims', 'view');
+        // Add other checks as permissions expand
+        return true;
+      });
 
   const handleLogout = async () => {
     const isConfirmed = await showConfirmAction(

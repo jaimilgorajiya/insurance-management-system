@@ -171,6 +171,24 @@ const userSchema = new mongoose.Schema({
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User"
+    },
+    // RBAC Permissions for Agents
+    permissions: {
+        customers: {
+            create: { type: Boolean, default: true },
+            view: { type: Boolean, default: true },
+            edit: { type: Boolean, default: true },
+            delete: { type: Boolean, default: false }
+        },
+        policies: {
+            view: { type: Boolean, default: true }
+        },
+        claims: {
+            create: { type: Boolean, default: true },
+            view: { type: Boolean, default: true },
+            edit: { type: Boolean, default: false },
+            delete: { type: Boolean, default: false }
+        }
     }
 }, { timestamps: true });
 

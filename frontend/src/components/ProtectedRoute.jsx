@@ -1,20 +1,23 @@
 import { Navigate, Outlet } from 'react-router-dom';
+import { hasPermission } from '../utils/permissionUtils';
 
-const ProtectedRoute = ({ allowedRoles }) => {
+const ProtectedRoute = ({ allowedRoles, module, action }) => {
   const token = localStorage.getItem('token');
   const userRole = localStorage.getItem('userRole');
 
   if (!token) {
-    // Redirect to login if no token is found
     return <Navigate to="/login" replace />;
   }
 
   if (allowedRoles && !allowedRoles.includes(userRole)) {
-    // Redirect to access denied if role not allowed
     return <Navigate to="/access-denied" replace />;
   }
 
-  // If token exists and role is allowed, render the child routes
+  // Support for granular permissions
+  if (module && action && !hasPermission(module, action)) {
+    return <Navigate to="/access-denied" replace />;
+  }
+
   return <Outlet />;
 };
 

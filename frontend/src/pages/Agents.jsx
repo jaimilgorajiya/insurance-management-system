@@ -212,6 +212,12 @@ const Agents = () => {
         </svg>
     );
 
+    const ShieldIcon = () => (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+    );
+
     const AgentAvatar = ({ name }) => (
         <div style={{
             width: '40px', height: '40px', borderRadius: '50%', 
@@ -370,6 +376,14 @@ const Agents = () => {
                                                         style={{ color: '#2563eb', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: '0.25rem', border: 'none', background: 'none', cursor: 'pointer' }}
                                                     >
                                                         <EyeIcon />
+                                                    </button>
+                                                    <button 
+                                                        className="action-btn edit" 
+                                                        title="Permissions"
+                                                        onClick={() => navigate(`/admin/agents/permissions/${agent._id}`)}
+                                                        style={{ color: '#8b5cf6', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', border: 'none', background: 'none', cursor: 'pointer' }}
+                                                    >
+                                                        <ShieldIcon />
                                                     </button>
                                                     <button 
                                                         className="action-btn edit" 

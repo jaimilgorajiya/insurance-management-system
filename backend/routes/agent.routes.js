@@ -2,7 +2,7 @@ import { Router } from "express";
 import { 
     registerAgent, loginAgent, logoutAgent,
     getAllAgents, updateAgent, deleteAgent,
-    getMyCommissions
+    getMyCommissions, updateAgentPermissions
 } from "../controllers/agent.controllers.js";
 import { verifyJWT, authorizeRoles } from "../middlewares/auth.middleware.js";
 
@@ -21,6 +21,7 @@ router.get("/my-commissions", verifyJWT, authorizeRoles("agent"), getMyCommissio
 // --- AGENT MANAGEMENT (Admin Access) ---
 router.get("/all", verifyJWT, authorizeRoles("admin"), getAllAgents);
 router.put("/update/:id", verifyJWT, authorizeRoles("admin"), updateAgent);
+router.patch("/permissions/:id", verifyJWT, authorizeRoles("admin"), updateAgentPermissions);
 router.delete("/delete/:id", verifyJWT, authorizeRoles("admin"), deleteAgent);
         
 export default router;

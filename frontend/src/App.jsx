@@ -20,6 +20,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { ClaimsPlaceholder, ReportsPlaceholder } from './pages/Placeholders';
 import AccessDenied from './pages/AccessDenied';
 import AgentCommission from './pages/AgentCommission';
+import AgentPermissions from './pages/AgentPermissions';
 
 function App() {
   return (
@@ -35,14 +36,23 @@ function App() {
         <Route path="/access-denied" element={<AccessDenied />} />
 
         {/* Protected Routes - Common for Admin and Agent */}
-        <Route element={<ProtectedRoute allowedRoles={['admin', 'agent']} />}>
+        <Route element={<ProtectedRoute allowedRoles={['admin', 'agent']} module="customers" action="view" />}>
           <Route path="/admin/customers" element={<Customers />} />
-          <Route path="/admin/customers/create" element={<CustomerOnboarding />} />
-          <Route path="/admin/customers/edit/:id" element={<EditCustomer />} />
           <Route path="/admin/customers/:id" element={<CustomerDetails />} />
-          <Route path="/admin/customers/:customerId/buy-policy" element={<BuyPolicy />} />
-          <Route path="/admin/claims" element={<ClaimsPlaceholder />} />
           <Route path="/admin/documents/customers/:customerId" element={<CustomerDocuments />} />
+        </Route>
+
+        <Route element={<ProtectedRoute allowedRoles={['admin', 'agent']} module="customers" action="create" />}>
+          <Route path="/admin/customers/create" element={<CustomerOnboarding />} />
+        </Route>
+
+        <Route element={<ProtectedRoute allowedRoles={['admin', 'agent']} module="customers" action="edit" />}>
+          <Route path="/admin/customers/edit/:id" element={<EditCustomer />} />
+          <Route path="/admin/customers/:customerId/buy-policy" element={<BuyPolicy />} />
+        </Route>
+
+        <Route element={<ProtectedRoute allowedRoles={['admin', 'agent']} />}>
+          <Route path="/admin/claims" element={<ClaimsPlaceholder />} />
         </Route>
 
         {/* Admin Only Routes */}
@@ -51,6 +61,7 @@ function App() {
           <Route path="/admin/agents" element={<Agents />} />
           <Route path="/admin/agents/create" element={<EditAgent />} />
           <Route path="/admin/agents/edit/:id" element={<EditAgent />} />
+          <Route path="/admin/agents/permissions/:id" element={<AgentPermissions />} />
           <Route path="/admin/agents/:id" element={<AgentDetails />} />
           <Route path="/admin/policy-types" element={<PolicyTypes />} />
           <Route path="/admin/policies" element={<Policies />} />

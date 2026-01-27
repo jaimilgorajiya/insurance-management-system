@@ -99,3 +99,27 @@ export const logout = async (req, res) => {
         });
     }
 };
+
+export const getMe = async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).json({ success: false, message: "Not authenticated" });
+        }
+
+        const user = await User.findById(req.user._id).select("-password");
+
+        return res.status(200).json({
+            success: true,
+            user: {
+                id: user._id,
+                email: user.email,
+                name: user.name,
+                role: user.role,
+                status: user.status,
+                permissions: user.permissions
+            }
+        });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};

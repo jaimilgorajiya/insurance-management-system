@@ -1,0 +1,191 @@
+import React, { useState, useEffect } from 'react';
+import Layout from '../components/Layout';
+import { useParams, useNavigate } from 'react-router-dom';
+import { showSuccessAlert, showErrorAlert } from '../utils/swalUtils';
+
+const AgentPermissions = () => {
+    const { id } = useParams();
+    const navigate = useNavigate();
+    const [agent, setAgent] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+    // Permissions State
+    const [permissions, setPermissions] = useState({
+        customers: {
+            create: false,
+            view: false,
+            edit: false,
+            delete: false
+        },
+        policies: {
+            view: false
+        },
+        claims: {
+            create: false,
+            view: false,
+            edit: false,
+            delete: false
+        }
+    });
+
+    useEffect(() => {
+        fetchAgentDetails();
+    }, [id]);
+
+    const fetchAgentDetails = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_BASE_URL}/agent/all`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            const foundAgent = data.agents?.find(a => a._id === id);
+            
+            if (foundAgent) {
+                setAgent(foundAgent);
+                if (foundAgent.permissions) {
+                    setPermissions(foundAgent.permissions);
+                }
+            } else {
+                showErrorAlert('Agent not found');
+                navigate('/admin/agents');
+            }
+        } catch (error) {
+            console.error(error);
+            showErrorAlert('Error fetching agent details');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleCheckboxChange = (module, action) => {
+        setPermissions(prev => ({
+            ...prev,
+            [module]: {
+                ...prev[module],
+                [action]: !prev[module][action]
+            }
+        }));
+    };
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_BASE_URL}/agent/permissions/${id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ permissions })
+            });
+
+            if (!res.ok) throw new Error('Failed to update permissions');
+
+            showSuccessAlert('Permissions updated successfully');
+            navigate('/admin/agents');
+        } catch (error) {
+            console.error(error);
+            showErrorAlert('Error saving permissions');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const modules = [
+        { id: 'customers', name: 'Customer Management', actions: ['create', 'view', 'edit', 'delete'] },
+        { id: 'policies', name: 'Policy Management', actions: ['view'] },
+        { id: 'claims', name: 'Claims Management', actions: ['create', 'view', 'edit', 'delete'] }
+    ];
+
+    if (loading) return <Layout><div className="center-screen">Loading...</div></Layout>;
+
+    return (
+        <Layout>
+            <div className="onboarding-container">
+                <div className="page-header" style={{ marginBottom: '2rem' }}>
+                    <div>
+                        <button onClick={() => navigate('/admin/agents')} className="btn-outline" style={{ border: 'none', padding: 0, marginBottom: '1rem', color: '#64748b' }}>
+                            ← Back to Agents
+                        </button>
+                        <h1 className="page-title">Permission Matrix: {agent?.name}</h1>
+                        <p className="page-subtitle">Configure granular access levels for this agent</p>
+                    </div>
+                    <div className="header-actions">
+                        <button 
+                            className="btn-primary" 
+                            onClick={handleSave}
+                            disabled={saving}
+                            style={{ backgroundColor: '#0f766e' }}
+                        >
+                            {saving ? 'Saving...' : 'Save Permissions'}
+                        </button>
+                    </div>
+                </div>
+
+                <div style={{ backgroundColor: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                        <thead>
+                            <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                                <th style={{ padding: '1.25rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, color: '#475569' }}>Feature Module</th>
+                                <th style={{ padding: '1.25rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, color: '#475569', textAlign: 'center' }}>Create</th>
+                                <th style={{ padding: '1.25rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, color: '#475569', textAlign: 'center' }}>View</th>
+                                <th style={{ padding: '1.25rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, color: '#475569', textAlign: 'center' }}>Edit</th>
+                                <th style={{ padding: '1.25rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, color: '#475569', textAlign: 'center' }}>Delete</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {modules.map((module) => (
+                                <tr key={module.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                    <td style={{ padding: '1.25rem 1.5rem' }}>
+                                        <div style={{ fontWeight: 600, color: '#0f172a' }}>{module.name}</div>
+                                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Permissions for {module.id} module</div>
+                                    </td>
+                                    {['create', 'view', 'edit', 'delete'].map((action) => (
+                                        <td key={action} style={{ padding: '1.25rem 1.5rem', textAlign: 'center' }}>
+                                            {module.actions.includes(action) ? (
+                                                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                                                    <input 
+                                                        type="checkbox" 
+                                                        checked={permissions[module.id]?.[action] || false}
+                                                        onChange={() => handleCheckboxChange(module.id, action)}
+                                                        style={{ 
+                                                            width: '1.25rem', 
+                                                            height: '1.25rem', 
+                                                            cursor: 'pointer',
+                                                            accentColor: '#0f766e'
+                                                        }}
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <span style={{ color: '#e2e8f0' }}>—</span>
+                                            )}
+                                        </td>
+                                    ))}
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style={{ marginTop: '2rem', padding: '1.5rem', backgroundColor: '#f0f9ff', borderRadius: '12px', border: '1px solid #bae6fd' }}>
+                    <div style={{ display: 'flex', gap: '1rem' }}>
+                        <div style={{ fontSize: '1.5rem' }}>ℹ️</div>
+                        <div>
+                            <h4 style={{ margin: 0, color: '#0369a1', fontWeight: 600 }}>Role Isolation Notice</h4>
+                            <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.875rem', color: '#075985' }}>
+                                These permissions are specific to the agent's role. Agents can only manage data that is assigned to them, 
+                                even if "View" or "Edit" permissions are enabled for a whole module.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </Layout>
+    );
+};
+
+export default AgentPermissions;

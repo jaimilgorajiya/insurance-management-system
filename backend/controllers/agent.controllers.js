@@ -96,6 +96,39 @@ export const deleteAgent = async (req, res) => {
     } catch (e) { res.status(500).json({ message: e.message }); }
 };
 
+export const updateAgentPermissions = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { permissions } = req.body;
+
+        if (!permissions) {
+            return res.status(400).json({ success: false, message: "Permissions object is required" });
+        }
+
+        const agent = await User.findOne({ _id: id, role: "agent" });
+
+        if (!agent) {
+            return res.status(404).json({ success: false, message: "Agent not found" });
+        }
+
+        agent.permissions = permissions;
+        agent.markModified('permissions');
+        await agent.save();
+
+        if (!agent) {
+            return res.status(404).json({ success: false, message: "Agent not found" });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Permissions updated successfully",
+            agent
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 export const getMyCommissions = async (req, res) => {
     try {
         const agentId = req.user._id;

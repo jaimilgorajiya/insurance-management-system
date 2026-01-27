@@ -3,7 +3,7 @@ import {
     createCustomer, loginCustomer, logoutCustomer,
     getCustomers, updateCustomer, deleteCustomer
 } from "../controllers/customer.controllers.js";
-import { verifyJWT, authorizeRoles } from "../middlewares/auth.middleware.js";
+import { verifyJWT, authorizeRoles, checkPermission } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
@@ -15,9 +15,9 @@ router.post("/logout", logoutCustomer);
 router.post("/register", createCustomer);
 
 // --- CUSTOMER MANAGEMENT (Admin/Agent Access) ---
-router.get("/all", verifyJWT, authorizeRoles("admin", "agent"), getCustomers);
-router.put("/update/:id", verifyJWT, authorizeRoles("admin", "agent"), updateCustomer);
-router.delete("/delete/:id", verifyJWT, authorizeRoles("admin", "agent"), deleteCustomer);
+router.get("/all", verifyJWT, authorizeRoles("admin", "agent"), checkPermission("customers", "view"), getCustomers);
+router.put("/update/:id", verifyJWT, authorizeRoles("admin", "agent"), checkPermission("customers", "edit"), updateCustomer);
+router.delete("/delete/:id", verifyJWT, authorizeRoles("admin", "agent"), checkPermission("customers", "delete"), deleteCustomer);
 
 // --- SUB-CUSTOMER MANAGEMENT (Customer Access) ---
 router.post("/create", verifyJWT, authorizeRoles("customer", "admin"), createCustomer);

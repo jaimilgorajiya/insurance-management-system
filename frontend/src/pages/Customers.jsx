@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { showSuccessAlert, showErrorAlert, showConfirmDelete, showWarningAlert } from '../utils/swalUtils';
+import { hasPermission } from '../utils/permissionUtils';
 
 const Customers = () => {
     const navigate = useNavigate();
@@ -254,9 +255,11 @@ const Customers = () => {
                         <button className="btn-outline" onClick={handleExport}>
                             <ExportIcon /> Export
                         </button>
-                        <button className="btn-primary" onClick={() => navigate('/admin/customers/create')}>
-                            <PlusIcon /> Add Customer
-                        </button>
+                        {hasPermission('customers', 'create') && (
+                            <button className="btn-primary" onClick={() => navigate('/admin/customers/create')}>
+                                <PlusIcon /> Add Customer
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -395,19 +398,23 @@ const Customers = () => {
                                                 >
                                                     <EyeIcon /> 
                                                 </button>
-                                                <button 
-                                                    className="action-btn edit"
-                                                    onClick={() => navigate(`/admin/customers/edit/${customer._id}`)}
-                                                >
-                                                    <EditIcon /> 
-                                                </button>
-                                                <button 
-                                                    className="action-btn delete"
-                                                    onClick={() => handleDelete(customer._id)}
-                                                    style={{ color: '#ef4444' }}
-                                                >
-                                                    <DeleteIcon /> 
-                                                </button>
+                                                {hasPermission('customers', 'edit') && (
+                                                    <button 
+                                                        className="action-btn edit"
+                                                        onClick={() => navigate(`/admin/customers/edit/${customer._id}`)}
+                                                    >
+                                                        <EditIcon /> 
+                                                    </button>
+                                                )}
+                                                {hasPermission('customers', 'delete') && (
+                                                    <button 
+                                                        className="action-btn delete"
+                                                        onClick={() => handleDelete(customer._id)}
+                                                        style={{ color: '#ef4444' }}
+                                                    >
+                                                        <DeleteIcon /> 
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
