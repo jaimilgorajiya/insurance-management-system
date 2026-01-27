@@ -48,11 +48,19 @@ const CustomerOnboarding = () => {
         zipCode: '',
         country: '',
         
+        // Nominee Details
+        addNominee: false,
+        nomineeName: '',
+        nomineeRelationship: '',
+        nomineeDob: '',
+        nomineeContact: '',
+        
         // Step 3: KYC Documents
         documents: {
             governmentId: null,
             proofOfAddress: null,
-            incomeProof: null
+            incomeProof: null,
+            nomineeId: null
         },
         
         // Step 4: Policy Selection (empty for now)
@@ -544,6 +552,68 @@ const CustomerOnboarding = () => {
                                         onChange={(e) => handleInputChange('country', e.target.value)}
                                     />
                                 </div>
+
+                                {/* Nominee Section */}
+                                <div className="form-group form-group-full" style={{ marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '1rem', fontWeight: 600, color: '#0f172a' }}>
+                                        <input 
+                                            type="checkbox" 
+                                            checked={formData.addNominee}
+                                            onChange={(e) => handleInputChange('addNominee', e.target.checked)}
+                                            style={{ width: '1.25rem', height: '1.25rem' }}
+                                        />
+                                        Add Nominee Details
+                                    </label>
+                                </div>
+
+                                {formData.addNominee && (
+                                    <>
+                                        <div className="form-group">
+                                            <label className="form-label">Nominee Name</label>
+                                            <input
+                                                type="text"
+                                                className="form-input"
+                                                placeholder="Full Name"
+                                                value={formData.nomineeName}
+                                                onChange={(e) => handleInputChange('nomineeName', e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label">Relationship</label>
+                                            <select
+                                                className="form-select"
+                                                value={formData.nomineeRelationship}
+                                                onChange={(e) => handleInputChange('nomineeRelationship', e.target.value)}
+                                            >
+                                                <option value="">Select Relationship</option>
+                                                <option value="Spouse">Spouse</option>
+                                                <option value="Child">Child</option>
+                                                <option value="Parent">Parent</option>
+                                                <option value="Sibling">Sibling</option>
+                                                <option value="Other">Other</option>
+                                            </select>
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label">Nominee DOB</label>
+                                            <input
+                                                type="date"
+                                                className="form-input"
+                                                value={formData.nomineeDob}
+                                                onChange={(e) => handleInputChange('nomineeDob', e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label">Nominee Contact</label>
+                                            <input
+                                                type="tel"
+                                                className="form-input"
+                                                placeholder="Phone Number"
+                                                value={formData.nomineeContact}
+                                                onChange={(e) => handleInputChange('nomineeContact', e.target.value)}
+                                            />
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
                     )}
@@ -639,6 +709,37 @@ const CustomerOnboarding = () => {
                                         </div>
                                     )}
                                 </div>
+
+                                {/* Nominee ID Proof */}
+                                {formData.addNominee && (
+                                    <div className="document-upload-section">
+                                        <div className="upload-area">
+                                            <UploadIcon />
+                                            <h3 className="upload-title">Nominee ID Proof</h3>
+                                            <p className="upload-subtitle">Drag and drop or click to upload</p>
+                                            <input
+                                                type="file"
+                                                accept="image/*,.pdf"
+                                                onChange={(e) => handleDocumentUpload('nomineeId', e.target.files[0])}
+                                                className="file-input"
+                                                id="nomineeId"
+                                            />
+                                            <label htmlFor="nomineeId" className="upload-btn">Select File</label>
+                                        </div>
+                                        {formData.documents.nomineeId && (
+                                            <div className="uploaded-file">
+                                                <span className="file-name">{formData.documents.nomineeId.name}</span>
+                                                <span className="file-date">Uploaded: {formData.documents.nomineeId.uploadDate}</span>
+                                                <button 
+                                                    className="view-btn"
+                                                    onClick={() => openDocumentModal(formData.documents.nomineeId)}
+                                                >
+                                                    View
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}

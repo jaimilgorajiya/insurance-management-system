@@ -482,6 +482,7 @@ a {
 }
 
 .form-grid {
+    margin-bottom: 40px;
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 1.25rem;
