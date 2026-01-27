@@ -112,8 +112,24 @@ const userSchema = new mongoose.Schema({
     // Policy information (for future use)
     selectedPolicy: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Policy" // This will be created later when policy management is implemented
+        ref: "Policy"
     },
+    purchasedPolicies: [{
+        policy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Policy",
+            required: true
+        },
+        purchaseDate: {
+            type: Date,
+            default: Date.now
+        },
+        status: {
+            type: String,
+            enum: ["active", "expired", "cancelled"],
+            default: "active"
+        }
+    }],
     password: {
         type: String,
         required: true,

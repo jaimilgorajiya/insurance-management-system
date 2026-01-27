@@ -15,6 +15,7 @@ import PolicyDetails from './pages/PolicyDetails';
 import Providers from './pages/Providers';
 import Documents from './pages/Documents';
 import CustomerDocuments from './pages/CustomerDocuments';
+import BuyPolicy from './pages/BuyPolicy';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -35,6 +36,7 @@ function App() {
           <Route path="/admin/customers/create" element={<CustomerOnboarding />} />
           <Route path="/admin/customers/edit/:id" element={<EditCustomer />} />
           <Route path="/admin/customers/:id" element={<CustomerDetails />} />
+          <Route path="/admin/customers/:customerId/buy-policy" element={<BuyPolicy />} />
           <Route path="/admin/agents" element={<Agents />} />
           <Route path="/admin/agents/create" element={<EditAgent />} />
           <Route path="/admin/agents/edit/:id" element={<EditAgent />} />

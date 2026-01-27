@@ -335,7 +335,6 @@ const Customers = () => {
                                 <th>CUSTOMER</th>
                                 <th>CONTACT</th>
                                 <th>POLICIES</th>
-                                <th>TOTAL PREMIUM</th>
                                 <th>STATUS</th>
                                 <th>KYC</th>
                                 <th>JOIN DATE</th>
@@ -360,7 +359,13 @@ const Customers = () => {
                                                     {customer.name ? customer.name.charAt(0).toUpperCase() : 'U'}
                                                 </div>
                                                 <div className="customer-info">
-                                                    <span className="customer-name">{customer.name || 'Unknown'}</span>
+                                                    <span 
+                                                        className="customer-name" 
+                                                        onClick={() => navigate(`/admin/customers/${customer._id}`)}
+                                                        style={{ cursor: 'pointer', color: '#2563eb', fontWeight: '600' }}
+                                                    >
+                                                        {customer.name || 'Unknown'}
+                                                    </span>
                                                     <span className="customer-email">{customer.email}</span>
                                                 </div>
                                             </div>
@@ -368,11 +373,8 @@ const Customers = () => {
                                         <td>{customer.mobile || '-'}</td>
                                         <td>
                                             <span className="badge-blue">
-                                                {customer.selectedPolicy ? 1 : 0} Policies
+                                                {customer.purchasedPolicies?.length > 0 ? customer.purchasedPolicies.length : (customer.selectedPolicy ? 1 : 0)} Policies
                                             </span>
-                                        </td>
-                                        <td className="font-medium">
-                                            ${customer.selectedPolicy?.premiumAmount ? customer.selectedPolicy.premiumAmount.toLocaleString() : '0'}
                                         </td>
                                         <td>
                                             <span className={`badge-status ${customer.status}`}>

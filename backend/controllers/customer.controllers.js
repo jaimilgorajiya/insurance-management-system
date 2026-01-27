@@ -88,6 +88,7 @@ export const getCustomers = async (req, res) => {
             .select("-password")
             .populate('createdBy', 'name email')
             .populate('selectedPolicy', 'policyName premiumAmount')
+            .populate('purchasedPolicies.policy', 'policyName premiumAmount')
             .sort({ createdAt: -1 });
         res.status(200).json({
             message: "Customers fetched successfully",
@@ -101,21 +102,32 @@ export const getCustomers = async (req, res) => {
 export const updateCustomer = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, email, mobile, status, kycStatus } = req.body;
-
-        const updateData = {};
-        if (name) updateData.name = name;
-        if (email) updateData.email = email;
-        if (mobile) updateData.mobile = mobile;
-        if (status) updateData.status = status;
-        if (kycStatus) updateData.kycStatus = kycStatus;
+        const { name, email, mobile, status, kycStatus, selectedPolicy } = req.body;
+        
+        const updateOperations = { $set: {} };
+        if (name) updateOperations.$set.name = name;
+        if (email) updateOperations.$set.email = email;
+        if (mobile) updateOperations.$set.mobile = mobile;
+        if (status) updateOperations.$set.status = status;
+        if (kycStatus) updateOperations.$set.kycStatus = kycStatus;
+        if (selectedPolicy) {
+            updateOperations.$set.selectedPolicy = selectedPolicy;
+            // Also add to purchased history
+            updateOperations.$push = { 
+                purchasedPolicies: {
+                    policy: selectedPolicy,
+                    purchaseDate: new Date(),
+                    status: 'active'
+                }
+            };
+        }
 
         const query = { _id: id, role: "customer" };
         if (req.user.role === "customer") {
             query.createdBy = req.user._id;
         }
 
-        const customer = await User.findOneAndUpdate(query, updateData, { new: true }).select("-password");
+        const customer = await User.findOneAndUpdate(query, updateOperations, { new: true }).select("-password");
         if (!customer) return res.status(404).json({ message: "Customer not found or access denied" });
 
         res.status(200).json({ message: "Customer updated successfully", customer });

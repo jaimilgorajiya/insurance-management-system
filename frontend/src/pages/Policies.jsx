@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { showSuccessAlert, showErrorAlert, showWarningAlert, showConfirmAction, showConfirmDelete } from '../utils/swalUtils';
-import { Eye, SquarePen, Trash2, Shield, Heart, Home, Car, Plane, Briefcase, Umbrella, Activity, Building, BriefcaseBusiness, ChevronDown, ChevronUp } from 'lucide-react';
+import { Eye, SquarePen, Trash2, Shield, Heart, Home, Car, Plane, Briefcase, Umbrella, Activity, Building, BriefcaseBusiness, ChevronDown, ChevronUp, CheckCircle } from 'lucide-react';
 // import ProvidersModal from '../components/ProvidersModal';
 
 const Policies = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [policies, setPolicies] = useState([]);
     const [policyTypes, setPolicyTypes] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -20,6 +21,9 @@ const Policies = () => {
     const [isViewOnly, setIsViewOnly] = useState(false);
     const [policyStats, setPolicyStats] = useState([]);
     const [selectedType, setSelectedType] = useState(null);
+    const [selectForCustomer, setSelectForCustomer] = useState(null);
+    const [customerName, setCustomerName] = useState('');
+
     const [filters, setFilters] = useState({
         search: '',
         status: 'All',
@@ -40,7 +44,6 @@ const Policies = () => {
         minAge: 18,
         maxAge: 70,
         renewable: true,
-        renewable: true,
         status: 'active',
         policySource: 'IN_HOUSE',
         provider: '',
@@ -55,13 +58,35 @@ const Policies = () => {
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
     useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const customerId = params.get('selectFor');
+        if (customerId) {
+            setSelectForCustomer(customerId);
+            fetchCustomerName(customerId);
+        }
+
         fetchPolicies();
         fetchPolicyTypes();
         fetchPolicies();
         fetchPolicyTypes();
         fetchProviders();
         fetchPolicyStats();
-    }, []);
+    }, [location.search]);
+
+    const fetchCustomerName = async (id) => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_BASE_URL}/customer-onboarding/details/${id}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setCustomerName(data.data.customer.name);
+            }
+        } catch (error) {
+            console.error("Error fetching customer name");
+        }
+    };
 
     const fetchProviders = async () => {
         try {
@@ -384,6 +409,37 @@ const Policies = () => {
         return <Umbrella size={20} />;
     };
 
+    const handleSelectPolicy = async (policy) => {
+        const confirmed = await showConfirmAction(
+            'Confirm Policy Selection',
+            `Assign ${policy.policyName} to ${customerName}?`,
+            'Yes, Assign Policy',
+            '#2563eb'
+        );
+
+        if (!confirmed) return;
+
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_BASE_URL}/customer/update/${selectForCustomer}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ selectedPolicy: policy._id })
+            });
+
+            if (!res.ok) throw new Error('Failed to assign policy');
+
+            await showSuccessAlert('Policy assigned successfully');
+            navigate(`/admin/customers/${selectForCustomer}`);
+        } catch (error) {
+            console.error(error);
+            showErrorAlert('Failed to assign policy');
+        }
+    };
+
     return (
         <Layout>
             <div className="onboarding-container">
@@ -392,17 +448,26 @@ const Policies = () => {
                         <h1 className="page-title">Policies</h1>
                         <p className="page-subtitle">Manage insurance policies and plans</p>
                     </div>
-                    <div style={{ display: 'flex', gap: '1rem' }}>
-                        <button className="btn-outline" onClick={() => navigate('/admin/policy-types')} style={{ backgroundColor: 'white' }}>
-                            Policy Types
-                        </button>
-                        <button className="btn-outline" onClick={() => navigate('/admin/providers')} style={{ backgroundColor: 'white' }}>
-                            Providers
-                        </button>
-                        <button className="btn-primary" onClick={() => handleOpenModal()}>
-                            + Add Policy
-                        </button>
-                    </div>
+                    {selectForCustomer ? (
+                         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                            <div style={{ padding: '0.5rem 1rem', backgroundColor: '#eff6ff', borderRadius: '8px', color: '#1e40af', border: '1px solid #bfdbfe' }}>
+                                Selecting policy for: <strong>{customerName}</strong>
+                            </div>
+                            <button className="btn-outline" onClick={() => navigate(`/admin/customers/${selectForCustomer}`)}>Cancel</button>
+                        </div>
+                    ) : (
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                            <button className="btn-outline" onClick={() => navigate('/admin/policy-types')} style={{ backgroundColor: 'white' }}>
+                                Policy Types
+                            </button>
+                            <button className="btn-outline" onClick={() => navigate('/admin/providers')} style={{ backgroundColor: 'white' }}>
+                                Providers
+                            </button>
+                            <button className="btn-primary" onClick={() => handleOpenModal()}>
+                                + Add Policy
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {/* Filters */}
@@ -654,30 +719,43 @@ const Policies = () => {
                                             </td>
                                             <td>
                                                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                    <button 
-                                                        onClick={() => navigate(`/admin/policies/${policy._id}`)}
-                                                        className="action-btn view"
-                                                        title="View"
-                                                        style={{ color: '#2563eb' }}
-                                                    >
-                                                        <Eye size={18} strokeWidth={2} />
-                                                    </button>
-                                                    <button 
-                                                        onClick={() => handleOpenModal(policy)}
-                                                        className="action-btn edit"
-                                                        title="Edit"
-                                                        style={{ color: '#64748b' }}
-                                                    >
-                                                        <SquarePen size={18} strokeWidth={2} />
-                                                    </button>
-                                                    <button 
-                                                        onClick={() => handleDeletePolicy(policy._id)}
-                                                        className="action-btn delete"
-                                                        title="Delete"
-                                                        style={{ color: '#ef4444' }}
-                                                    >
-                                                        <Trash2 size={18} strokeWidth={2} />
-                                                    </button>
+                                                    {selectForCustomer ? (
+                                                        <button 
+                                                            onClick={() => handleSelectPolicy(policy)}
+                                                            className="btn-primary"
+                                                            style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem', gap: '0.25rem' }}
+                                                            title="Select this policy"
+                                                        >
+                                                            <CheckCircle size={14} /> Select
+                                                        </button>
+                                                    ) : (
+                                                        <>
+                                                            <button 
+                                                                onClick={() => navigate(`/admin/policies/${policy._id}`)}
+                                                                className="action-btn view"
+                                                                title="View"
+                                                                style={{ color: '#2563eb' }}
+                                                            >
+                                                                <Eye size={18} strokeWidth={2} />
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => handleOpenModal(policy)}
+                                                                className="action-btn edit"
+                                                                title="Edit"
+                                                                style={{ color: '#64748b' }}
+                                                            >
+                                                                <SquarePen size={18} strokeWidth={2} />
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => handleDeletePolicy(policy._id)}
+                                                                className="action-btn delete"
+                                                                title="Delete"
+                                                                style={{ color: '#ef4444' }}
+                                                            >
+                                                                <Trash2 size={18} strokeWidth={2} />
+                                                            </button>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>

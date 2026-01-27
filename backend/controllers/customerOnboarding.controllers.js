@@ -397,7 +397,22 @@ export const getCustomerOnboardingDetails = async (req, res) => {
             });
         }
 
-        const customer = await User.findById(customerId).select('-password');
+        const customer = await User.findById(customerId)
+            .select('-password')
+            .populate({
+                path: 'selectedPolicy',
+                populate: [
+                    { path: 'policyType' },
+                    { path: 'provider' }
+                ]
+            })
+            .populate({
+                path: 'purchasedPolicies.policy',
+                populate: [
+                    { path: 'policyType' },
+                    { path: 'provider' }
+                ]
+            });
         if (!customer) {
             return res.status(404).json({
                 success: false,
