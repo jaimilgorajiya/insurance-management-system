@@ -223,25 +223,32 @@ const CustomerDetails = () => {
                                     style={{ 
                                         display: 'flex', 
                                         alignItems: 'center', 
+                                        justifyContent: 'center',
                                         gap: '8px', 
                                         fontSize: '0.9rem',
-                                        padding: '0.55rem 1.1rem',
+                                        padding: '0.6rem 1.2rem',
                                         borderRadius: '8px',
                                         background: 'white',
                                         color: '#4f46e5',
-                                        border: '1px solid #e0e7ff',
-                                        boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+                                        border: '1px solid #c7d2fe',
+                                        boxShadow: '0 2px 4px rgba(79, 70, 229, 0.1)',
                                         fontWeight: 600,
                                         cursor: 'pointer',
-                                        transition: 'all 0.2s'
+                                        transition: 'all 0.2s',
+                                        whiteSpace: 'nowrap',
+                                        height: 'fit-content'
                                     }}
                                     onMouseOver={(e) => {
                                         e.currentTarget.style.background = '#eef2ff';
                                         e.currentTarget.style.borderColor = '#4f46e5';
+                                        e.currentTarget.style.transform = 'translateY(-1px)';
+                                        e.currentTarget.style.boxShadow = '0 4px 6px rgba(79, 70, 229, 0.15)';
                                     }}
                                     onMouseOut={(e) => {
                                         e.currentTarget.style.background = 'white';
-                                        e.currentTarget.style.borderColor = '#e0e7ff';
+                                        e.currentTarget.style.borderColor = '#c7d2fe';
+                                        e.currentTarget.style.transform = 'translateY(0)';
+                                        e.currentTarget.style.boxShadow = '0 2px 4px rgba(79, 70, 229, 0.1)';
                                     }}
                                 >
                                     <Sparkles size={16} fill="#4f46e5" className="text-primary" /> AI Write Email
