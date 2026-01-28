@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { showSuccessAlert, showErrorAlert, showConfirmDelete } from '../utils/swalUtils';
-import { hasPermission } from '../utils/permissionUtils';
+import { hasPermission, usePermission } from '../utils/permissionUtils';
 
 import Swal from 'sweetalert2';
 import { Mail, Sparkles, Copy, X } from 'lucide-react';
 
 const CustomerDetails = () => {
+    usePermission(); // Listen for realtime permission updates
     const { id } = useParams();
     const navigate = useNavigate();
     const [customer, setCustomer] = useState(null);
@@ -217,7 +218,7 @@ const CustomerDetails = () => {
                         </span>
                         
                         <div style={{ display: 'flex', gap: '0.5rem', marginLeft: '1rem' }}>
-                            {(localStorage.getItem('userRole') === 'admin' || localStorage.getItem('userRole') === 'agent') && (
+                            {(localStorage.getItem('userRole') === 'admin' || hasPermission('communications', 'email')) && (
                                 <button
                                     onClick={() => setEmailModalOpen(true)}
                                     style={{ 

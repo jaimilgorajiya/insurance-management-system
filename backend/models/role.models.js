@@ -27,6 +27,9 @@ const roleSchema = new mongoose.Schema({
             view: { type: Boolean, default: true },
             edit: { type: Boolean, default: false },
             delete: { type: Boolean, default: false }
+        },
+        communications: {
+            email: { type: Boolean, default: false }
         }
     },
     description: {

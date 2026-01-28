@@ -81,7 +81,16 @@ export const usePermission = () => {
     useEffect(() => {
         const handleSync = () => setTick(t => t + 1);
         window.addEventListener('permissionsChanged', handleSync);
-        return () => window.removeEventListener('permissionsChanged', handleSync);
+        
+        // Auto-refresh permissions every 3 seconds to keep UI in sync
+        const interval = setInterval(() => {
+            syncPermissions();
+        }, 3000);
+
+        return () => {
+            window.removeEventListener('permissionsChanged', handleSync);
+            clearInterval(interval);
+        };
     }, []);
 
     return { hasPermission, syncPermissions, permissionsUpdated: tick };

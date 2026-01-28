@@ -29,6 +29,9 @@ const AgentPermissions = () => {
             view: false,
             edit: false,
             delete: false
+        },
+        communications: {
+            email: false
         }
     });
 
@@ -46,7 +49,10 @@ const AgentPermissions = () => {
             
             if (data.success && data.data) {
                 if (data.data.permissions) {
-                    setPermissions(data.data.permissions);
+                    setPermissions(prev => ({
+                        ...prev,
+                        ...data.data.permissions
+                    }));
                 }
             } else {
                 showErrorAlert('Failed to load global permissions');
@@ -63,8 +69,8 @@ const AgentPermissions = () => {
         setPermissions(prev => ({
             ...prev,
             [module]: {
-                ...prev[module],
-                [action]: !prev[module][action]
+                ...(prev[module] || {}), // Ensure module object exists
+                [action]: !(prev[module]?.[action])
             }
         }));
     };
@@ -98,6 +104,7 @@ const AgentPermissions = () => {
         { id: 'customers', name: 'Customer Management', actions: ['create', 'view', 'edit', 'delete'] },
         { id: 'policies', name: 'Policy Management', actions: ['view'] },
         { id: 'kyc', name: 'KYC Verification', actions: ['approve', 'reject'] },
+        { id: 'communications', name: 'Communications', actions: ['email'] },
         // { id: 'claims', name: 'Claims Management', actions: ['create', 'view', 'edit', 'delete'] }
     ];
 
@@ -149,6 +156,8 @@ const AgentPermissions = () => {
                                         if (module.id === 'kyc') {
                                             if (actionCol === 'create_or_approve') action = 'approve';
                                             if (actionCol === 'view_or_reject') action = 'reject';
+                                        } else if (module.id === 'communications') {
+                                            if (actionCol === 'create_or_approve') action = 'email';
                                         } else {
                                             if (actionCol === 'create_or_approve') action = 'create';
                                             if (actionCol === 'view_or_reject') action = 'view';
@@ -171,6 +180,9 @@ const AgentPermissions = () => {
                                                         />
                                                         {module.id === 'kyc' && (
                                                             <span style={{ fontSize: '0.65rem', color: '#64748b', textTransform: 'capitalize' }}>{action}</span>
+                                                        )}
+                                                        {module.id === 'communications' && action === 'email' && (
+                                                            <span style={{ fontSize: '0.65rem', color: '#64748b', textTransform: 'capitalize' }}>Send Email</span>
                                                         )}
                                                     </div>
                                                 ) : (
