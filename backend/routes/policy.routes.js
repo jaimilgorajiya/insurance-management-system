@@ -3,6 +3,7 @@ import {
     getPolicies,
     getPolicyById,
     getPolicySummary,
+    getPolicyAISummary,
     createPolicy,
     updatePolicy,
     togglePolicyStatus,
@@ -25,6 +26,9 @@ router.route("/:id")
     .get(getPolicyById)
     .put(authorizeRoles("admin"), updatePolicy)
     .delete(authorizeRoles("admin"), deletePolicy);
+
+router.route("/:id/ai-summary")
+    .post(getPolicyAISummary);
 
 router.route("/:id/status")
     .patch(authorizeRoles("admin"), togglePolicyStatus);

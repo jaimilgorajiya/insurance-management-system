@@ -2,13 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { showErrorAlert } from '../utils/swalUtils';
-import { Shield, Clock, DollarSign, User, Activity, AlertCircle, ArrowLeft, CheckCircle2, Building, Briefcase } from 'lucide-react';
+import { Shield, Clock, DollarSign, User, Activity, AlertCircle, ArrowLeft, CheckCircle2, Building, Briefcase, Sparkles } from 'lucide-react';
 
 const PolicyDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const [policy, setPolicy] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [aiSummary, setAiSummary] = useState(null);
+    const [isGenerating, setIsGenerating] = useState(false);
 
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -34,6 +36,29 @@ const PolicyDetails = () => {
         };
         fetchPolicy();
     }, [id, API_BASE_URL]);
+
+    const handleGenerateSummary = async () => {
+        setIsGenerating(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_BASE_URL}/policies/${id}/ai-summary`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            
+            if (res.ok) {
+                setAiSummary(data.data);
+            } else {
+                throw new Error(data.message || 'Failed to generate summary');
+            }
+        } catch (error) {
+            console.error(error);
+            showErrorAlert(error.message || "Could not generate summary. Check API Key.");
+        } finally {
+            setIsGenerating(false);
+        }
+    };
 
     if (loading) return <Layout><div className="center-screen">Loading policy details...</div></Layout>;
     if (!policy) return <Layout><div className="center-screen">Policy not found</div></Layout>;
@@ -62,6 +87,24 @@ const PolicyDetails = () => {
                         <p className="page-subtitle">{policy.planName} • ID: {policy._id}</p>
                     </div>
                     <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                        <button 
+                            onClick={handleGenerateSummary}
+                            disabled={isGenerating}
+                            className="btn-primary"
+                            style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '8px', 
+                                borderRadius: '50px', 
+                                padding: '10px 20px',
+                                background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+                                boxShadow: '0 4px 15px rgba(168, 85, 247, 0.4)',
+                                border: 'none'
+                             }}
+                        >
+                            <Sparkles size={18} fill="white" />
+                            {isGenerating ? 'Analyzing...' : 'AI Summarize'}
+                        </button>
                          <span className={`badge-status ${policy.status}`} style={{ fontSize: '0.875rem', padding: '0.5rem 1rem', borderRadius: '8px' }}>
                             {policy.status.toUpperCase()}
                         </span>
@@ -69,6 +112,61 @@ const PolicyDetails = () => {
                 </div>
 
                 <div className="form-grid">
+                    
+                    {aiSummary && (
+                        <div style={{ gridColumn: 'span 2', marginBottom: '1rem' }} className="review-section custom-ai-panel">
+                             <div style={{ 
+                                 background: 'linear-gradient(to right, #fdfbfb, #ebedee)', 
+                                 padding: '1.5rem', 
+                                 borderRadius: '16px',
+                                 border: '1px solid #e2e8f0',
+                                 boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05)'
+                             }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+                                    <div style={{ background: '#a855f7', padding: '8px', borderRadius: '10px' }}>
+                                        <Sparkles className="text-white" size={24} fill="white" />
+                                    </div>
+                                    <h3 style={{ margin: 0, background: 'linear-gradient(to right, #6366f1, #a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontSize: '1.5rem', fontWeight: 700 }}>AI Policy Guide</h3>
+                                </div>
+
+                                <div style={{ marginBottom: '1.5rem' }}>
+                                    <p style={{ fontSize: '1.1rem', color: '#334155', lineHeight: 1.6, fontWeight: 500 }}>
+                                        {aiSummary.description}
+                                    </p>
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                                    <div style={{ background: 'white', padding: '1.25rem', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
+                                        <h4 style={{ color: '#0f172a', fontWeight: 600, marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <CheckCircle2 size={18} className="text-success" /> Key Benefits
+                                        </h4>
+                                        <ul style={{ paddingLeft: '1.2rem', margin: 0, color: '#475569' }}>
+                                            {aiSummary.benefits && aiSummary.benefits.map((b, i) => (
+                                                <li key={i} style={{ marginBottom: '6px' }}>{b}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                    <div style={{ background: 'white', padding: '1.25rem', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
+                                        <h4 style={{ color: '#0f172a', fontWeight: 600, marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <User size={18} className="text-primary" /> Customer Insight
+                                        </h4>
+                                        <p style={{ margin: 0, color: '#475569', fontSize: '0.95rem', lineHeight: 1.5 }}>
+                                            {aiSummary.customerExplanation}
+                                        </p>
+                                    </div>
+                                    <div style={{ gridColumn: 'span 2', background: '#f0f9ff', padding: '1rem', borderRadius: '10px', border: '1px solid #bae6fd' }}>
+                                         <h4 style={{ color: '#0369a1', fontWeight: 600, marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}>
+                                            <DollarSign size={16} /> Financial Breakdown
+                                        </h4>
+                                        <p style={{ margin: 0, color: '#0c4a6e', fontWeight: 500 }}>
+                                            {aiSummary.financialBreakdown}
+                                        </p>
+                                    </div>
+                                </div>
+                             </div>
+                        </div>
+                    )}
+
                     {/* Core Information */}
                     <div className="review-section">
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
