@@ -313,7 +313,7 @@ export const generateCustomerEmailAI = async (req, res) => {
 
     // 3. Initialize AI
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
     // 4. STRONG CONTEXT-AWARE PROMPT
     const prompt = `
