@@ -20,8 +20,12 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { ClaimsPlaceholder, ReportsPlaceholder } from './pages/Placeholders';
 import AccessDenied from './pages/AccessDenied';
 import AgentCommission from './pages/AgentCommission';
+
 import AgentPermissions from './pages/AgentPermissions';
 import Profile from './pages/Profile';
+import Claims from './pages/Claims';
+import CreateClaim from './pages/CreateClaim';
+import ClaimDetails from './pages/ClaimDetails';
 
 function App() {
   return (
@@ -29,7 +33,7 @@ function App() {
       <Routes>
         {/* Public Route */}
         <Route path="/login" element={<Login />} />
-        
+
         {/* Redirect root to login */}
         <Route path="/" element={<Navigate to="/login" replace />} />
 
@@ -57,9 +61,14 @@ function App() {
           <Route path="/admin/customers/:customerId/buy-policy" element={<BuyPolicy />} />
         </Route>
 
-        {/* <Route element={<ProtectedRoute allowedRoles={['admin', 'agent']} />}>
-          <Route path="/admin/claims" element={<ClaimsPlaceholder />} />
-        </Route> */}
+        <Route element={<ProtectedRoute allowedRoles={['admin', 'agent']} module="claims" action="view" />}>
+          <Route path="/admin/claims" element={<Claims />} />
+          <Route path="/admin/claims/:id" element={<ClaimDetails />} />
+        </Route>
+
+        <Route element={<ProtectedRoute allowedRoles={['admin', 'agent']} module="claims" action="create" />}>
+          <Route path="/admin/claims/new" element={<CreateClaim />} />
+        </Route>
 
         <Route element={<ProtectedRoute allowedRoles={['admin', 'agent']} module="policies" action="view" />}>
           <Route path="/admin/policies" element={<Policies />} />

@@ -105,7 +105,7 @@ const AgentPermissions = () => {
         { id: 'policies', name: 'Policy Management', actions: ['view'] },
         { id: 'kyc', name: 'KYC Verification', actions: ['approve', 'reject'] },
         { id: 'communications', name: 'Communications', actions: ['email'] },
-        // { id: 'claims', name: 'Claims Management', actions: ['create', 'view', 'edit', 'delete'] }
+        { id: 'claims', name: 'Claims Management', actions: ['create', 'view', 'edit', 'delete'] }
     ];
 
     if (loading) return <Layout><div className="center-screen">Loading...</div></Layout>;

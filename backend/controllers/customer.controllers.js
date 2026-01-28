@@ -69,9 +69,17 @@ export const getCustomers = async (req, res) => {
     try {
         const query = { role: "customer" };
         if (req.user.role === "customer") {
-            query.createdBy = req.user._id;
+            query.createdBy = req.user._id; 
+            // Note: A customer usually only sees themselves, but if they created sub-users (rare), this would apply.
+            // Better logic for customer role might be query._id = req.user._id if they are only allowed to see their own profile.
+            // But sticking to the existing pattern of "createdBy" for now, or maybe just restrict to themselves:
+             query._id = req.user._id; 
         } else if (req.user.role === "agent") {
-            query.assignedAgentId = req.user._id;
+            // Agent sees customers they created OR customers assigned to them
+            query.$or = [
+                { createdBy: req.user._id },
+                { assignedAgentId: req.user._id }
+            ];
         }
 
         // Filtering
@@ -85,16 +93,30 @@ export const getCustomers = async (req, res) => {
         // Search
         if (req.query.search) {
             const searchRegex = new RegExp(req.query.search, 'i');
-            query.$or = [
-                { name: searchRegex },
-                { email: searchRegex },
-                { mobile: searchRegex }
-            ];
+            const searchCondition = {
+                $or: [
+                    { name: searchRegex },
+                    { email: searchRegex },
+                    { mobile: searchRegex }
+                ]
+            };
+            
+            // Combine with existing query
+            if (query.$or) {
+                query.$and = [
+                    { $or: query.$or }, // The agent permission check
+                    searchCondition     // The search check
+                ];
+                delete query.$or; // Move the permission check into $and
+            } else {
+                query.$or = searchCondition.$or;
+            }
         }
         
         const customers = await User.find(query)
             .select("-password")
             .populate('createdBy', 'name email')
+            .populate('assignedAgentId', 'name email')
             .populate('selectedPolicy', 'policyName premiumAmount')
             .populate('purchasedPolicies.policy', 'policyName premiumAmount')
             .sort({ createdAt: -1 });
@@ -107,6 +129,59 @@ export const getCustomers = async (req, res) => {
 };
 
 // Unified Update (Admin updates any, Customer updates only their own)
+// Unified Update (Admin updates any, Customer updates only their own)
+export const getCustomerById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        console.log(`[getCustomerById] Fetching customer ID: ${id} for User: ${req.user._id} (${req.user.role})`);
+
+        // Basic ID validation
+        if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+            console.log(`[getCustomerById] Invalid ID format: ${id}`);
+             return res.status(400).json({ message: "Invalid Customer ID" });
+        }
+
+        const customer = await User.findOne({ _id: id, role: "customer" })
+            .select("-password")
+            .populate('createdBy', 'name email')
+            .populate('assignedAgentId', 'name email')
+            .populate('selectedPolicy', 'policyName premiumAmount')
+            .populate({
+                path: 'purchasedPolicies.policy',
+                populate: { path: 'policyType' }
+            });
+
+        if (!customer) {
+            console.log(`[getCustomerById] Customer not found: ${id}`);
+            return res.status(404).json({ message: "Customer not found" });
+        }
+
+        // Access Control
+        if (req.user.role === 'customer' && customer._id.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ message: "Access denied" });
+        }
+        if (req.user.role === 'agent') {
+            // Handle populated fields safely
+            const assignedId = customer.assignedAgentId?._id?.toString() || customer.assignedAgentId?.toString();
+            const creatorId = customer.createdBy?._id?.toString() || customer.createdBy?.toString();
+            
+            const isAssigned = assignedId === req.user._id.toString();
+            const isCreator = creatorId === req.user._id.toString();
+
+            console.log(`[getCustomerById] Agent Access Check - Assigned: ${isAssigned}, Creator: ${isCreator}`);
+            
+            if (!isAssigned && !isCreator) {
+                return res.status(403).json({ message: "Access denied: Not your customer" });
+            }
+        }
+
+        res.status(200).json({ success: true, data: customer });
+    } catch (e) {
+        console.error(`[getCustomerById] Error:`, e);
+         res.status(500).json({ message: e.message });
+    }
+};
+
 export const updateCustomer = async (req, res) => {
     try {
         const { id } = req.params;

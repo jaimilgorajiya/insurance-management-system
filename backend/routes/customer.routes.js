@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { 
     createCustomer, loginCustomer, logoutCustomer,
-    getCustomers, updateCustomer, deleteCustomer, generateCustomerEmailAI
+    getCustomers, getCustomerById, updateCustomer, deleteCustomer, generateCustomerEmailAI
 } from "../controllers/customer.controllers.js";
 import { verifyJWT, authorizeRoles, checkPermission } from "../middlewares/auth.middleware.js";
 
@@ -16,7 +16,9 @@ router.post("/register", createCustomer);
 router.post("/email-draft/:id", verifyJWT, authorizeRoles("admin", "agent"), generateCustomerEmailAI);
 
 // --- CUSTOMER MANAGEMENT (Admin/Agent Access) ---
+router.get("/", verifyJWT, authorizeRoles("admin", "agent"), checkPermission("customers", "view"), getCustomers);
 router.get("/all", verifyJWT, authorizeRoles("admin", "agent"), checkPermission("customers", "view"), getCustomers);
+router.get("/:id", verifyJWT, authorizeRoles("admin", "agent"), checkPermission("customers", "view"), getCustomerById);
 router.put("/update/:id", verifyJWT, authorizeRoles("admin", "agent"), updateCustomer);
 router.delete("/delete/:id", verifyJWT, authorizeRoles("admin", "agent"), checkPermission("customers", "delete"), deleteCustomer);
 

@@ -13,6 +13,7 @@ import policyTypeRoutes from "./routes/policyType.routes.js";
 import policyRoutes from "./routes/policy.routes.js";
 import providerRoutes from "./routes/provider.routes.js";
 import documentRoutes from "./routes/document.routes.js";
+import claimRoutes from "./routes/claim.routes.js";
 import { verifyJWT } from "./middlewares/auth.middleware.js";
 import connectDB from "./db/db.js";
 
@@ -59,6 +60,7 @@ app.use("/api/admin/policy-types", policyTypeRoutes);
 app.use("/api/policies", policyRoutes);
 app.use("/api/providers", providerRoutes);
 app.use("/api/documents", documentRoutes);
+app.use("/api/claims", claimRoutes);
 
 // Shared endpoints
 app.get("/api/me", verifyJWT, (req, res) => {

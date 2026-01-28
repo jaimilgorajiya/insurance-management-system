@@ -22,7 +22,7 @@ const Sidebar = ({ collapsed, toggleSidebar }) => {
     { label: 'Customers', icon: <CustomersIcon />, path: '/admin/customers' },
     { label: 'Policies', icon: <PoliciesIcon />, path: '/admin/policies' },
     { label: 'Agents', icon: <AgentsIcon />, path: '/admin/agents' },
-    // { label: 'Claims', icon: <ClaimsIcon />, path: '/admin/claims' },
+    { label: 'Claims', icon: <ClaimsIcon />, path: '/admin/claims' },
     { label: 'Documents', icon: <DocumentsIcon />, path: '/admin/documents' },
     { label: 'Notifications', icon: <NotificationsIcon />, path: '/admin/notifications' },
     { label: 'Reports', icon: <ReportsIcon />, path: '/admin/reports' },
@@ -32,7 +32,7 @@ const Sidebar = ({ collapsed, toggleSidebar }) => {
     { label: 'Dashboard', icon: <DashboardIcon />, path: '/agent/dashboard' },
     { label: 'My Customers', icon: <CustomersIcon />, path: '/admin/customers' },
     { label: 'Policies', icon: <PoliciesIcon />, path: '/admin/policies' },
-    // { label: 'Claims', icon: <ClaimsIcon />, path: '/admin/claims' },
+    { label: 'Claims', icon: <ClaimsIcon />, path: '/admin/claims' },
     { label: 'Commission', icon: <CommissionIcon />, path: '/agent/commission' },
   ];
 
