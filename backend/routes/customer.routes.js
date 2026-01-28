@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { 
     createCustomer, loginCustomer, logoutCustomer,
-    getCustomers, updateCustomer, deleteCustomer
+    getCustomers, updateCustomer, deleteCustomer, generateCustomerEmailAI
 } from "../controllers/customer.controllers.js";
 import { verifyJWT, authorizeRoles, checkPermission } from "../middlewares/auth.middleware.js";
 
@@ -13,6 +13,7 @@ router.post("/logout", logoutCustomer);
 
 // --- CUSTOMER SELF-REGISTRATION ---
 router.post("/register", createCustomer);
+router.post("/email-draft/:id", verifyJWT, authorizeRoles("admin", "agent"), generateCustomerEmailAI);
 
 // --- CUSTOMER MANAGEMENT (Admin/Agent Access) ---
 router.get("/all", verifyJWT, authorizeRoles("admin", "agent"), checkPermission("customers", "view"), getCustomers);

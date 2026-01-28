@@ -1,4 +1,5 @@
 import { User } from "../models/user.models.js";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Policy } from "../models/policy.models.js"; // Import Policy model
 import { comparePassword } from "@jaimilgorajiya/password-utils";
 import { generateTokenAndResponse } from "../utils/generateToken.js";
@@ -271,5 +272,107 @@ export const deleteCustomer = async (req, res) => {
         const customer = await User.findOneAndDelete(query);
         if (!customer) return res.status(404).json({ message: "Customer not found or access denied" });
         res.status(200).json({ message: "Customer deleted successfully" });
+
     } catch (e) { res.status(500).json({ message: e.message }); }
+};
+// POST /api/customer/email-draft/:id
+export const generateCustomerEmailAI = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { topic, selectedPolicyId } = req.body;
+
+    // 1. Fetch customer with ALL policies
+    const customer = await User.findById(id)
+      .populate("purchasedPolicies.policy") // array of policies customer owns
+      .populate("selectedPolicy");
+
+    if (!customer) {
+      return res.status(404).json({ message: "Customer not found" });
+    }
+
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(500).json({ message: "AI API Key missing" });
+    }
+
+    const agentName = req.user.name;
+
+    // 2. Prepare policy context
+    const policies = customer.purchasedPolicies?.map(p => p.policy) || [];
+    const selectedPolicy =
+      policies.find(p => p._id.toString() === selectedPolicyId) ||
+      customer.selectedPolicy ||
+      null;
+
+    const policySummary = policies.length
+      ? policies.map(p => `- ${p.policyType}: ${p.policyName}`).join("\n")
+      : "No active policies";
+
+    const hasHealth = policies.some(p => p.policyType === "Health");
+    const hasLife = policies.some(p => p.policyType === "Life");
+    const hasMotor = policies.some(p => p.policyType === "Motor");
+
+    // 3. Initialize AI
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+
+    // 4. STRONG CONTEXT-AWARE PROMPT
+    const prompt = `
+You are an AI Email Assistant inside an Insurance CRM.
+
+Write a professional, accurate, and context-aware email.
+
+RULES:
+- Do NOT use sales language
+- Do NOT suggest policies the customer already has
+- Be neutral and respectful
+- If the topic is not applicable, adapt the message appropriately
+- Reference a specific policy ONLY if provided
+
+EMAIL CONTEXT:
+Topic: ${topic}
+
+CUSTOMER:
+Name: ${customer.name}
+
+AGENT:
+Name: ${agentName}
+
+CUSTOMER POLICIES:
+${policySummary}
+
+POLICY OWNERSHIP FLAGS:
+- Has Health Policy: ${hasHealth}
+- Has Life Policy: ${hasLife}
+- Has Motor Policy: ${hasMotor}
+
+SELECTED POLICY:
+${selectedPolicy ? `${selectedPolicy.policyType} - ${selectedPolicy.policyName}` : "None"}
+
+TOPIC RULES:
+- Generic / Check-in → Reference selected policy if available, otherwise mention coverage generally
+- Policy Renewal → Mention only renewable policies
+- Payment Follow-up → Be factual and neutral
+- Cross-sell Health Insurance → 
+  If customer already has health insurance, suggest review or optimization instead
+
+Return ONLY valid JSON:
+{
+  "subject": "Email subject",
+  "body": "Email body"
+}
+`;
+
+    // 5. Generate
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+
+    const cleanText = text.replace(/```json|```/g, "").trim();
+    const emailData = JSON.parse(cleanText);
+
+    res.status(200).json({ success: true, data: emailData });
+
+  } catch (error) {
+    console.error("AI Email Error:", error);
+    res.status(500).json({ message: "Failed to generate email draft" });
+  }
 };

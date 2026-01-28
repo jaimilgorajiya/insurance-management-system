@@ -3,7 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { showSuccessAlert, showErrorAlert, showConfirmDelete } from '../utils/swalUtils';
 import { hasPermission } from '../utils/permissionUtils';
+
 import Swal from 'sweetalert2';
+import { Mail, Sparkles, Copy, X } from 'lucide-react';
 
 const CustomerDetails = () => {
     const { id } = useParams();
@@ -12,6 +14,12 @@ const CustomerDetails = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [documentModal, setDocumentModal] = useState({ isOpen: false, document: null, type: null });
+    
+    // AI Email State
+    const [emailModalOpen, setEmailModalOpen] = useState(false);
+    const [emailTopic, setEmailTopic] = useState('Generic');
+    const [generatedEmail, setGeneratedEmail] = useState(null);
+    const [isGeneratingEmail, setIsGeneratingEmail] = useState(false);
 
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -120,6 +128,38 @@ const CustomerDetails = () => {
         setDocumentModal({ isOpen: false, document: null, type: null, url: null });
     };
 
+    // AI Email Handler
+    const handleGenerateEmail = async () => {
+        setIsGeneratingEmail(true);
+        setGeneratedEmail(null);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_BASE_URL}/customer/email-draft/${id}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ topic: emailTopic })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setGeneratedEmail(data.data);
+            } else {
+                throw new Error(data.message || "Failed to generate email");
+            }
+        } catch (error) {
+            showErrorAlert(error.message);
+        } finally {
+            setIsGeneratingEmail(false);
+        }
+    };
+
+    const copyToClipboard = (text) => {
+        navigator.clipboard.writeText(text);
+        showSuccessAlert("Copied to clipboard!");
+    };
+
     const getStatusBadgeClass = (status) => {
         switch (status) {
             case 'approved': return 'badge-kyc approved';
@@ -177,6 +217,36 @@ const CustomerDetails = () => {
                         </span>
                         
                         <div style={{ display: 'flex', gap: '0.5rem', marginLeft: '1rem' }}>
+                            {(localStorage.getItem('userRole') === 'admin' || localStorage.getItem('userRole') === 'agent') && (
+                                <button
+                                    onClick={() => setEmailModalOpen(true)}
+                                    style={{ 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        gap: '8px', 
+                                        fontSize: '0.9rem',
+                                        padding: '0.55rem 1.1rem',
+                                        borderRadius: '8px',
+                                        background: 'white',
+                                        color: '#4f46e5',
+                                        border: '1px solid #e0e7ff',
+                                        boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+                                        fontWeight: 600,
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s'
+                                    }}
+                                    onMouseOver={(e) => {
+                                        e.currentTarget.style.background = '#eef2ff';
+                                        e.currentTarget.style.borderColor = '#4f46e5';
+                                    }}
+                                    onMouseOut={(e) => {
+                                        e.currentTarget.style.background = 'white';
+                                        e.currentTarget.style.borderColor = '#e0e7ff';
+                                    }}
+                                >
+                                    <Sparkles size={16} fill="#4f46e5" className="text-primary" /> AI Write Email
+                                </button>
+                            )}
                             {(localStorage.getItem('userRole') === 'admin' || hasPermission('kyc', 'approve')) && (
                                 <button 
                                     className="btn-primary"
@@ -556,6 +626,242 @@ const CustomerDetails = () => {
                                     />
                                 )}
                             </div>
+                        </div>
+                    </div>
+                )}
+                {/* AI Email Modal */}
+                {emailModalOpen && (
+                    <div className="modal-overlay" onClick={() => setEmailModalOpen(false)} style={{
+                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                        backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center',
+                        zIndex: 1000
+                    }}>
+                        <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{
+                            backgroundColor: 'white', padding: '2rem', borderRadius: '16px',
+                            maxWidth: '600px', width: '90%', position: 'relative'
+                        }}>
+                            <button onClick={() => setEmailModalOpen(false)} style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', cursor: 'pointer' }}>
+                                <X size={24} />
+                            </button>
+                            
+                            <h2 style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '1.5rem', fontWeight: 700, marginBottom: '1.5rem', color: '#1e293b' }}>
+                                <Sparkles className="text-primary" /> AI Email Assistant
+                            </h2>
+
+                            {!generatedEmail ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                    <div>
+                                        <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 600, color: '#374151', fontSize: '0.95rem' }}>Select Email Topic</label>
+                                        <div style={{ position: 'relative' }}>
+                                            <select 
+                                                value={emailTopic} 
+                                                onChange={(e) => setEmailTopic(e.target.value)}
+                                                style={{ 
+                                                    width: '100%', 
+                                                    padding: '0.875rem 1rem', 
+                                                    borderRadius: '10px', 
+                                                    border: '1px solid #d1d5db', 
+                                                    fontSize: '1rem',
+                                                    color: '#1f2937',
+                                                    backgroundColor: '#f9fafb',
+                                                    outline: 'none',
+                                                    transition: 'border-color 0.2s',
+                                                    cursor: 'pointer',
+                                                    appearance: 'none',
+                                                    backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+                                                    backgroundPosition: 'right 0.75rem center',
+                                                    backgroundRepeat: 'no-repeat',
+                                                    backgroundSize: '1.5em 1.5em',
+                                                    paddingRight: '2.5rem'
+                                                }}
+                                                onFocus={(e) => e.target.style.borderColor = '#4f46e5'}
+                                                onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
+                                            >
+                                                <optgroup label="General" style={{ fontWeight: '600' }}>
+                                                    <option value="Generic / Check-in">Generic / Check-in</option>
+                                                    <option value="Welcome New Client">Welcome New Client</option>
+                                                </optgroup>
+                                                <optgroup label="Policy">
+                                                    <option value="Policy Issued Confirmation">Policy Issued Confirmation</option>
+                                                    <option value="Policy Renewal Reminder">Policy Renewal Reminder</option>
+                                                    <option value="Policy Expired Notice">Policy Expired Notice</option>
+                                                    <option value="Policy Update Notification">Policy Update Notification</option>
+                                                </optgroup>
+                                                <optgroup label="Payments & Docs">
+                                                    <option value="Payment Follow-up">Payment Follow-up</option>
+                                                    <option value="Document Submission Reminder">Document Submission Reminder</option>
+                                                </optgroup>
+                                                <optgroup label="Claims">
+                                                    <option value="Claim Assistance / Update">Claim Assistance / Update</option>
+                                                </optgroup>
+                                                <optgroup label="Growth">
+                                                    <option value="Cross-sell Health Insurance">Cross-sell Health Insurance</option>
+                                                </optgroup>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={handleGenerateEmail}
+                                        disabled={isGeneratingEmail}
+                                        style={{ 
+                                            display: 'flex', 
+                                            justifyContent: 'center', 
+                                            alignItems: 'center',
+                                            gap: '10px', 
+                                            marginTop: '1.5rem',
+                                            width: '100%',
+                                            padding: '0.875rem',
+                                            backgroundColor: '#4f46e5',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: '10px',
+                                            fontSize: '1rem',
+                                            fontWeight: 600,
+                                            cursor: isGeneratingEmail ? 'not-allowed' : 'pointer',
+                                            opacity: isGeneratingEmail ? 0.8 : 1,
+                                            boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2), 0 2px 4px -1px rgba(79, 70, 229, 0.1)',
+                                            transition: 'all 0.2s'
+                                        }}
+                                        onMouseOver={(e) => !isGeneratingEmail && (e.currentTarget.style.backgroundColor = '#4338ca')}
+                                        onMouseOut={(e) => !isGeneratingEmail && (e.currentTarget.style.backgroundColor = '#4f46e5')}
+                                    >
+                                        <Sparkles size={18} fill="white" />
+                                        {isGeneratingEmail ? 'Generating Draft...' : 'Generate Draft'}
+                                    </button>
+                                </div>
+                            ) : (
+                                <div style={{ animation: 'fadeIn 0.3s' }}>
+                                    <div style={{ marginBottom: '1.25rem' }}>
+                                        <label style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.5px', color: '#6b7280', textTransform: 'uppercase', marginBottom: '0.5rem', display: 'block' }}>Subject</label>
+                                        <div style={{ display: 'flex', gap: '8px', position: 'relative' }}>
+                                            <input 
+                                                readOnly 
+                                                value={generatedEmail.subject} 
+                                                style={{ 
+                                                    width: '100%', 
+                                                    padding: '0.75rem 3rem 0.75rem 1rem', 
+                                                    borderRadius: '8px', 
+                                                    border: '1px solid #e5e7eb', 
+                                                    background: '#f9fafb',
+                                                    color: '#1f2937',
+                                                    fontWeight: 500,
+                                                    outline: 'none'
+                                                }}
+                                            />
+                                            <button 
+                                                onClick={() => copyToClipboard(generatedEmail.subject)} 
+                                                style={{ 
+                                                    position: 'absolute', 
+                                                    right: '8px', 
+                                                    top: '50%', 
+                                                    transform: 'translateY(-50%)',
+                                                    padding: '6px', 
+                                                    borderRadius: '6px',
+                                                    border: 'none',
+                                                    background: 'transparent',
+                                                    color: '#6b7280',
+                                                    cursor: 'pointer'
+                                                }}
+                                                title="Copy Subject"
+                                                onMouseOver={(e) => e.currentTarget.style.color = '#4f46e5'}
+                                                onMouseOut={(e) => e.currentTarget.style.color = '#6b7280'}
+                                            >
+                                                <Copy size={18} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <label style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.5px', color: '#6b7280', textTransform: 'uppercase', marginBottom: '0.5rem', display: 'block' }}>Email Body</label>
+                                        <div style={{ position: 'relative' }}>
+                                            <textarea 
+                                                readOnly 
+                                                value={generatedEmail.body} 
+                                                rows={12}
+                                                style={{ 
+                                                    width: '100%', 
+                                                    padding: '1rem', 
+                                                    paddingRight: '3rem',
+                                                    borderRadius: '10px', 
+                                                    border: '1px solid #e5e7eb', 
+                                                    background: '#f9fafb', 
+                                                    lineHeight: 1.7, 
+                                                    resize: 'none',
+                                                    color: '#374151',
+                                                    fontFamily: 'inherit',
+                                                    outline: 'none'
+                                                }}
+                                            />
+                                            <button 
+                                                onClick={() => copyToClipboard(generatedEmail.body)} 
+                                                style={{ 
+                                                    position: 'absolute', 
+                                                    top: '12px', 
+                                                    right: '12px', 
+                                                    background: 'white', 
+                                                    border: '1px solid #e5e7eb', 
+                                                    borderRadius: '6px', 
+                                                    padding: '6px', 
+                                                    cursor: 'pointer',
+                                                    color: '#6b7280',
+                                                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                                                }}
+                                                title="Copy Body"
+                                                onMouseOver={(e) => { e.currentTarget.style.borderColor = '#4f46e5'; e.currentTarget.style.color = '#4f46e5'; }}
+                                                onMouseOut={(e) => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.color = '#6b7280'; }}
+                                            >
+                                                <Copy size={16} />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+                                        <button 
+                                            onClick={() => setGeneratedEmail(null)} 
+                                            style={{ 
+                                                flex: 1, 
+                                                padding: '0.75rem', 
+                                                borderRadius: '8px', 
+                                                border: '1px solid #d1d5db', 
+                                                background: 'white', 
+                                                color: '#374151',
+                                                fontWeight: 600,
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s'
+                                            }}
+                                            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                                            onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                                        >
+                                            Try Again
+                                        </button>
+                                        <a 
+                                            href={`https://mail.google.com/mail/?view=cm&fs=1&to=${customer.email}&su=${encodeURIComponent(generatedEmail.subject)}&body=${encodeURIComponent(generatedEmail.body)}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            style={{ 
+                                                flex: 1, 
+                                                textAlign: 'center', 
+                                                textDecoration: 'none',
+                                                padding: '0.75rem',
+                                                borderRadius: '8px',
+                                                background: '#4f46e5',
+                                                color: 'white',
+                                                fontWeight: 600,
+                                                boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)',
+                                                transition: 'all 0.2s',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: '8px'
+                                            }}
+                                            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#4338ca'}
+                                            onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#4f46e5'}
+                                        >
+                                            <Mail size={18} /> Open in Gmail
+                                        </a>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
