@@ -116,17 +116,17 @@ const PolicyDetails = () => {
                     {aiSummary && (
                         <div style={{ gridColumn: 'span 2', marginBottom: '1rem' }} className="review-section custom-ai-panel">
                              <div style={{ 
-                                 background: 'linear-gradient(to right, #fdfbfb, #ebedee)', 
-                                 padding: '1.5rem', 
+                                 background: '#f8fafc',
+                                 padding: '1.75rem', 
                                  borderRadius: '16px',
-                                 border: '1px solid #e2e8f0',
-                                 boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05)'
+                                 border: '1px solid #cbd5e1',
+                                 boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
                              }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-                                    <div style={{ background: '#a855f7', padding: '8px', borderRadius: '10px' }}>
-                                        <Sparkles className="text-white" size={24} fill="white" />
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                                    <div style={{ background: '#3b82f6', padding: '8px', borderRadius: '8px' }}>
+                                        <Sparkles className="text-white" size={20} style={{ color: 'white' }} />
                                     </div>
-                                    <h3 style={{ margin: 0, background: 'linear-gradient(to right, #6366f1, #a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontSize: '1.5rem', fontWeight: 700 }}>AI Policy Guide</h3>
+                                    <h3 style={{ margin: 0, color: '#1e293b', fontSize: '1.25rem', fontWeight: 700 }}>AI Policy Summary</h3>
                                 </div>
 
                                 <div style={{ marginBottom: '1.5rem' }}>
@@ -136,32 +136,37 @@ const PolicyDetails = () => {
                                 </div>
 
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                                    <div style={{ background: 'white', padding: '1.25rem', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
-                                        <h4 style={{ color: '#0f172a', fontWeight: 600, marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                                        <h4 style={{ color: '#0f172a', fontWeight: 600, marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '1rem' }}>
                                             <CheckCircle2 size={18} className="text-success" /> Key Benefits
                                         </h4>
-                                        <ul style={{ paddingLeft: '1.2rem', margin: 0, color: '#475569' }}>
+                                        <ul style={{ paddingLeft: '1.2rem', margin: 0, color: '#334155', lineHeight: 1.6 }}>
                                             {aiSummary.benefits && aiSummary.benefits.map((b, i) => (
-                                                <li key={i} style={{ marginBottom: '6px' }}>{b}</li>
+                                                <li key={i} style={{ marginBottom: '8px' }}>{b}</li>
                                             ))}
                                         </ul>
                                     </div>
-                                    <div style={{ background: 'white', padding: '1.25rem', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
-                                        <h4 style={{ color: '#0f172a', fontWeight: 600, marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                            <User size={18} className="text-primary" /> Customer Insight
+                                    <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                                        <h4 style={{ color: '#0f172a', fontWeight: 600, marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '1rem' }}>
+                                            <User size={18} className="text-secondary" /> Who this policy may suit
                                         </h4>
-                                        <p style={{ margin: 0, color: '#475569', fontSize: '0.95rem', lineHeight: 1.5 }}>
+                                        <p style={{ margin: 0, color: '#334155', fontSize: '0.95rem', lineHeight: 1.6 }}>
                                             {aiSummary.customerExplanation}
                                         </p>
                                     </div>
-                                    <div style={{ gridColumn: 'span 2', background: '#f0f9ff', padding: '1rem', borderRadius: '10px', border: '1px solid #bae6fd' }}>
-                                         <h4 style={{ color: '#0369a1', fontWeight: 600, marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}>
-                                            <DollarSign size={16} /> Financial Breakdown
+                                    <div style={{ gridColumn: 'span 2', background: '#f8fafc', padding: '1.25rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                                         <h4 style={{ color: '#0f172a', fontWeight: 600, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '1rem' }}>
+                                            <DollarSign size={18} className="text-primary" /> Cost & Coverage Overview
                                         </h4>
-                                        <p style={{ margin: 0, color: '#0c4a6e', fontWeight: 500 }}>
+                                        <p style={{ margin: 0, color: '#334155', fontWeight: 500, lineHeight: 1.6, fontSize: '0.95rem' }}>
                                             {aiSummary.financialBreakdown}
                                         </p>
                                     </div>
+                                </div>
+                                <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+                                    <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: 0 }}>
+                                        This AI-generated summary is for informational purposes only and does not replace official policy documents.
+                                    </p>
                                 </div>
                              </div>
                         </div>
