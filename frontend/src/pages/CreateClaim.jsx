@@ -199,25 +199,75 @@ const CreateClaim = () => {
                     </div>
                 );
             case 2:
+                const isMaturity = formData.type === 'Maturity';
+                const selectedPolicy = policies.find(p => p.policy._id === formData.policyId);
+                const isTravelPolicy = selectedPolicy?.policy?.policyType?.name?.toLowerCase().includes('travel');
+
                 return (
                     <div className="form-grid">
-                        <div className="form-group">
-                            <label className="form-label">Incident Type</label>
-                            <select 
-                                className="form-select"
-                                value={formData.type}
-                                onChange={(e) => setFormData({...formData, type: e.target.value})}
-                            >
-                                <option value="Theft">Theft</option>
-                                <option value="Accident">Accident</option>
-                                <option value="Medical">Medical</option>
-                                <option value="Fire">Fire</option>
-                                <option value="Death">Death</option>
-                                <option value="Other">Other</option>
-                            </select>
+                        <div className="form-group" style={{ gridColumn: 'span 2', marginBottom: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem' }}>
+                            <label className="form-label" style={{ marginBottom: '0.75rem' }}>Claim Category</label>
+                            <div style={{ display: 'flex', gap: '2rem' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                    <input 
+                                        type="radio" 
+                                        name="claimCategory" 
+                                        checked={!isMaturity}
+                                        onChange={() => setFormData({...formData, type: 'Theft'})} 
+                                    />
+                                    <span style={{ fontWeight: 500, color: '#0f172a' }}>Accident / Incident</span>
+                                </label>
+                                <label 
+                                    style={{ 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        gap: '0.5rem', 
+                                        cursor: isTravelPolicy ? 'not-allowed' : 'pointer',
+                                        opacity: isTravelPolicy ? 0.5 : 1
+                                    }}
+                                    title={isTravelPolicy ? "Maturity claims are not applicable for Travel Isolation Policies" : ""}
+                                >
+                                    <input 
+                                        type="radio" 
+                                        name="claimCategory" 
+                                        checked={isMaturity}
+                                        disabled={isTravelPolicy}
+                                        onChange={() => {
+                                            if (isTravelPolicy) return;
+                                            const maturityAmount = selectedPolicy ? selectedPolicy.policy.coverageAmount : '';
+                                            setFormData({
+                                                ...formData, 
+                                                type: 'Maturity',
+                                                requestedAmount: maturityAmount
+                                            });
+                                        }}
+                                    />
+                                    <span style={{ fontWeight: 500, color: '#0f172a' }}>Policy Maturity</span>
+                                </label>
+                            </div>
+                            {isTravelPolicy && <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.5rem' }}>* Maturity claims are not available for Travel policies.</p>}
                         </div>
+
+                        {!isMaturity && (
+                            <div className="form-group">
+                                <label className="form-label">Incident Type</label>
+                                <select 
+                                    className="form-select"
+                                    value={formData.type}
+                                    onChange={(e) => setFormData({...formData, type: e.target.value})}
+                                >
+                                    <option value="Theft">Theft</option>
+                                    <option value="Accident">Accident</option>
+                                    <option value="Medical">Medical</option>
+                                    <option value="Fire">Fire</option>
+                                    <option value="Death">Death</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        )}
+
                         <div className="form-group">
-                            <label className="form-label">Incident Date</label>
+                            <label className="form-label">{isMaturity ? 'Maturity / Completion Date' : 'Incident Date'}</label>
                             <input 
                                 type="date"
                                 className="form-input"
@@ -227,22 +277,24 @@ const CreateClaim = () => {
                         </div>
 
                         <div className="form-group">
-                            <label className="form-label">Estimated Claim Amount ($)</label>
+                            <label className="form-label">{isMaturity ? 'Claim Amount / Payout ($)' : 'Estimated Claim Amount ($)'}</label>
                             <input 
                                 type="number"
                                 className="form-input"
                                 placeholder="0.00"
                                 value={formData.requestedAmount}
                                 onChange={(e) => setFormData({...formData, requestedAmount: e.target.value})}
+                                readOnly={isMaturity}
+                                style={{ backgroundColor: isMaturity ? '#f3f4f6' : 'white', cursor: isMaturity ? 'not-allowed' : 'text' }}
                             />
                         </div>
 
                         <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                            <label className="form-label">Description of Incident</label>
+                            <label className="form-label">{isMaturity ? 'Remarks / Notes' : 'Description of Incident'}</label>
                             <textarea 
                                 className="form-input"
                                 style={{ height: '120px', resize: 'vertical' }}
-                                placeholder="Describe what happened..."
+                                placeholder={isMaturity ? "Enter any additional remarks..." : "Describe what happened..."}
                                 value={formData.description}
                                 onChange={(e) => setFormData({...formData, description: e.target.value})}
                             />

@@ -88,10 +88,8 @@ const Claims = () => {
                     >
                         <option value="">All Statuses</option>
                         <option value="Submitted">Submitted</option>
-                        <option value="Under Review">Under Review</option>
                         <option value="Approved">Approved</option>
                         <option value="Rejected">Rejected</option>
-                        <option value="Settled">Settled</option>
                     </select>
 
                     <div style={{ flex: 1 }}></div>

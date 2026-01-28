@@ -1,13 +1,19 @@
 import { User } from "../models/user.models.js";
+import { Claim } from "../models/claim.models.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
 // GET /api/documents/customers
-// Lists customers who have uploaded at least one document
+// Lists customers who have uploaded at least one document (including Claim documents)
 export const getCustomersWithDocuments = asyncHandler(async (req, res) => {
+    // 1. Find customers who have claim documents
+    const claimCustomerIds = await Claim.distinct('customer', { 'documents.0': { $exists: true } });
+
+    // 2. Find customers matches KYC criteria OR is in the claim list
     const customers = await User.find({
         role: "customer",
         $or: [
+            { _id: { $in: claimCustomerIds } }, // Include customers with claim docs
             { "kycDocuments.governmentId": { $exists: true } },
             { "kycDocuments.proofOfAddress": { $exists: true } },
             { "kycDocuments.incomeProof": { $exists: true } },
@@ -16,6 +22,20 @@ export const getCustomersWithDocuments = asyncHandler(async (req, res) => {
             { "purchasedPolicies.policyDocument": { $exists: true } }
         ]
     }).select("firstName lastName name email kycDocuments purchasedPolicies");
+
+    // 3. Needs to fetch Claims for these customers to count correctly? 
+    // To avoid N+1 queries loop, let's fetch all relevant claims once.
+    const relevantClaims = await Claim.find({ 
+        customer: { $in: customers.map(c => c._id) },
+        'documents.0': { $exists: true } 
+    }).select('customer documents');
+
+    // Index claims by customer ID for fast lookup
+    const claimsByCustomer = {};
+    relevantClaims.forEach(c => {
+        if (!claimsByCustomer[c.customer]) claimsByCustomer[c.customer] = [];
+        claimsByCustomer[c.customer].push(...c.documents);
+    });
 
     const result = customers.map(customer => {
         let docCount = 0;
@@ -31,6 +51,12 @@ export const getCustomersWithDocuments = asyncHandler(async (req, res) => {
             }
         };
 
+        const trackDateOnly = (date) => {
+             if (date && (!lastUpload || new Date(date) > new Date(lastUpload))) {
+                lastUpload = date;
+            }
+        }
+
         trackDoc(docs.governmentId);
         trackDoc(docs.proofOfAddress);
         trackDoc(docs.incomeProof);
@@ -45,12 +71,17 @@ export const getCustomersWithDocuments = asyncHandler(async (req, res) => {
             customer.purchasedPolicies.forEach(p => {
                 if (p.policyDocument) {
                     docCount++;
-                    if (!lastUpload || new Date(p.purchaseDate) > new Date(lastUpload)) {
-                        lastUpload = p.purchaseDate;
-                    }
+                    trackDateOnly(p.purchaseDate);
                 }
             });
         }
+
+        // Track Claim Documents
+        const customerClaimsDocs = claimsByCustomer[customer._id] || [];
+        customerClaimsDocs.forEach(doc => {
+            docCount++;
+            trackDateOnly(doc.uploadedAt);
+        });
 
         return {
             _id: customer._id,
@@ -109,7 +140,7 @@ export const getCustomerDocuments = asyncHandler(async (req, res) => {
                 _id: doc._id || `${customer._id}_other_${idx}`,
                 docName: doc.name || doc.originalName || `Other Document ${idx + 1}`,
                 docTypeName: 'Other Document',
-                docTypeKey: `other/${doc._id}`, // Special key for other docs retrieval
+                docTypeKey: `other/${doc._id}`, 
                 fileType: doc.fileType || (doc.filename ? doc.filename.split('.').pop() : 'unknown'),
                 uploadDate: doc.uploadDate,
                 filename: doc.filename,
@@ -137,6 +168,31 @@ export const getCustomerDocuments = asyncHandler(async (req, res) => {
             }
         });
     }
+
+    // Add Claim Documents
+    const claims = await Claim.find({ customer: customerId }).select('claimNumber documents');
+    claims.forEach(claim => {
+        if (claim.documents && claim.documents.length > 0) {
+            claim.documents.forEach((doc, index) => {
+                documents.push({
+                    _id: doc._id || `${claim._id}_doc_${index}`,
+                    docName: `${doc.name} (Claim: ${claim.claimNumber})`,
+                    docTypeName: 'Claim Document',
+                    docTypeKey: `claim/${claim._id}/${index}`,
+                    fileType: doc.url ? doc.url.split('.').pop() : 'unknown',
+                    uploadDate: doc.uploadedAt,
+                    filename: doc.url,
+                    isStatic: true,
+                    staticUrl: doc.url,
+                    meta: { 
+                        claimId: claim._id,
+                        claimNumber: claim.claimNumber,
+                        type: doc.type
+                    }
+                });
+            });
+        }
+    });
 
     return res.status(200).json(
         new ApiResponse(200, {

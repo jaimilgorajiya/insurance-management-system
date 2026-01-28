@@ -20,7 +20,7 @@ const claimSchema = new mongoose.Schema({
     type: {
         type: String,
         required: true,
-        enum: ["Theft", "Accident", "Medical", "Death", "Fire", "Other"]
+        enum: ["Theft", "Accident", "Medical", "Death", "Fire", "Maturity", "Other"]
     },
     incidentDate: {
         type: Date,

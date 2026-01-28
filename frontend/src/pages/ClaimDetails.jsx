@@ -4,6 +4,7 @@ import Layout from '../components/Layout';
 import { showSuccessAlert, showErrorAlert, showConfirmAction } from '../utils/swalUtils';
 import { ArrowLeft, FileText, CheckCircle, XCircle, Clock, User, Upload } from 'lucide-react';
 import axios from 'axios';
+import Swal from 'sweetalert2';
 
 const ClaimDetails = () => {
     const { id } = useParams();
@@ -41,21 +42,44 @@ const ClaimDetails = () => {
         }
     };
 
-    const handleStatusUpdate = async (newStatus, approvedAmt = null) => {
-        const isConfirmed = await showConfirmAction(
-            `${newStatus} Claim`,
-            `Are you sure you want to mark this claim as ${newStatus}?`,
-            `Yes, ${newStatus} it`,
-            newStatus === 'Rejected' ? '#ef4444' : '#10b981'
-        );
+    const handleStatusUpdate = async (newStatus) => {
+        let approvedAmt = null;
 
-        if (!isConfirmed) return;
+        if (newStatus === 'Approved') {
+            // Prompt for Approved Amount
+            const { value: amount } = await Swal.fire({
+                title: 'Approve Claim',
+                text: 'Enter the amount to approve:',
+                input: 'number',
+                inputValue: claim.requestedAmount,
+                showCancelButton: true,
+                confirmButtonText: 'Approve',
+                confirmButtonColor: '#10b981',
+                inputValidator: (value) => {
+                    if (!value || Number(value) <= 0) {
+                        return 'Please enter a valid positive amount';
+                    }
+                }
+            });
+
+            if (!amount) return; // User cancelled
+            approvedAmt = Number(amount);
+        } else {
+            // Standard Confirmation for other statuses
+            const isConfirmed = await showConfirmAction(
+                `${newStatus} Claim`,
+                `Are you sure you want to mark this claim as ${newStatus}?`,
+                `Yes, ${newStatus} it`,
+                newStatus === 'Rejected' ? '#ef4444' : '#10b981'
+            );
+            if (!isConfirmed) return;
+        }
 
         setProcessing(true);
         try {
             const token = localStorage.getItem('token');
             const payload = { status: newStatus };
-            if (approvedAmt) payload.approvedAmount = approvedAmt;
+            if (approvedAmt !== null) payload.approvedAmount = approvedAmt;
 
             const res = await axios.put(`${API_BASE_URL}/claims/${id}/status`, payload, {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -168,7 +192,7 @@ const ClaimDetails = () => {
                                     <XCircle size={18} /> Reject
                                 </button>
                                 <button 
-                                    onClick={() => handleStatusUpdate('Approved', claim.requestedAmount)}
+                                    onClick={() => handleStatusUpdate('Approved')}
                                     disabled={processing}
                                     style={{
                                         backgroundColor: '#10b981',
