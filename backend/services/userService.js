@@ -1,6 +1,7 @@
 import { User } from "../models/user.models.js";
 import { validatePassword, hashPassword } from "@jaimilgorajiya/password-utils";
 import { sendCredentialsEmail } from "./emailService.js";
+import { sendWelcomeSMS } from "./smsService.js";
 
 /**
  * Generate a strong temporary password
@@ -101,6 +102,21 @@ export const createUser = async (userData, createdBy = null) => {
         } catch (emailError) {
             console.error("❌ Email sending failed:", emailError.message);
             // Don't throw error here - user is created successfully, email is secondary
+        }
+
+        // Send Welcome SMS
+        try {
+            if (newUserData.mobile) {
+                await sendWelcomeSMS({
+                    mobile: newUserData.mobile,
+                    name: createdUser.name,
+                    role: createdUser.role,
+                    email: createdUser.email,
+                    password: tempPassword
+                });
+            }
+        } catch (smsError) {
+            console.error("❌ SMS sending failed:", smsError.message);
         }
 
         return {

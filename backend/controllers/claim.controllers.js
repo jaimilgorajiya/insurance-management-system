@@ -38,6 +38,10 @@ export const createClaim = asyncHandler(async (req, res) => {
     const policy = customer.purchasedPolicies.find(p => p.policy.toString() === policyId);
     if (!policy) throw new ApiError(403, "This policy does not belong to the selected customer");
     
+    if (policy.status !== 'active') {
+        throw new ApiError(400, `Cannot create claim: Policy is ${policy.status}`);
+    }
+    
     // Check if duplicate claim exists (basic check)
     // const existingClaim = await Claim.findOne({ policy: policyId, incidentDate: new Date(incidentDate), status: { $ne: 'Rejected' } });
     // if (existingClaim) throw new ApiError(400, "A claim for this incident date already exists");
@@ -60,6 +64,13 @@ export const createClaim = asyncHandler(async (req, res) => {
             note: "Claim created"
         }]
     });
+
+    // Mark policy as 'claimed' so it doesn't show in active lists
+    const policyIndex = customer.purchasedPolicies.findIndex(p => p.policy.toString() === policyId);
+    if (policyIndex !== -1) {
+        customer.purchasedPolicies[policyIndex].status = 'claimed';
+        await customer.save();
+    }
 
     return res.status(201).json(
         new ApiResponse(201, claim, "Claim submitted successfully")

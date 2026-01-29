@@ -366,92 +366,174 @@ const CustomerDetails = () => {
                         )}
                     </div>
                     {customer.purchasedPolicies && customer.purchasedPolicies.length > 0 ? (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: '1.5rem' }}>
-                            {customer.purchasedPolicies.map((purchase, index) => {
-                                const policy = purchase.policy;
-                                if (!policy) return null;
-                                return (
-                                    <div key={index} style={{
-                                        border: '1px solid #e2e8f0',
-                                        borderRadius: '12px',
-                                        padding: '1.5rem',
-                                        backgroundColor: 'white',
-                                        position: 'relative'
-                                    }}>
-                                        {/* Status Badge */}
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
-                                            <div style={{ 
-                                                display: 'inline-flex', 
-                                                alignItems: 'center', 
-                                                padding: '0.25rem 0.75rem', 
-                                                borderRadius: '9999px', 
-                                                fontSize: '0.75rem', 
-                                                fontWeight: 600,
-                                                backgroundColor: policy.policySource === 'THIRD_PARTY' ? '#fff7ed' : '#f0fdf4',
-                                                color: policy.policySource === 'THIRD_PARTY' ? '#c2410c' : '#15803d',
-                                                border: `1px solid ${policy.policySource === 'THIRD_PARTY' ? '#fdba74' : '#86efac'}`
-                                            }}>
-                                                {policy.policySource === 'THIRD_PARTY' ? 'Third-Party' : 'In-House'}
+                        <>
+                            {/* Active Policies */}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
+                                {customer.purchasedPolicies.filter(p => p.status === 'active').map((purchase, index) => {
+                                    const policy = purchase.policy;
+                                    if (!policy) return null;
+                                    return (
+                                        <div key={index} style={{
+                                            border: '1px solid #e2e8f0',
+                                            borderRadius: '12px',
+                                            padding: '1.5rem',
+                                            backgroundColor: 'white',
+                                            position: 'relative'
+                                        }}>
+                                            {/* Status Badge */}
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+                                                <div style={{ 
+                                                    display: 'inline-flex', 
+                                                    alignItems: 'center', 
+                                                    padding: '0.25rem 0.75rem', 
+                                                    borderRadius: '9999px', 
+                                                    fontSize: '0.75rem', 
+                                                    fontWeight: 600,
+                                                    backgroundColor: policy.policySource === 'THIRD_PARTY' ? '#fff7ed' : '#f0fdf4',
+                                                    color: policy.policySource === 'THIRD_PARTY' ? '#c2410c' : '#15803d',
+                                                    border: `1px solid ${policy.policySource === 'THIRD_PARTY' ? '#fdba74' : '#86efac'}`
+                                                }}>
+                                                    {policy.policySource === 'THIRD_PARTY' ? 'Third-Party' : 'In-House'}
+                                                </div>
+                                                <div style={{ textAlign: 'right' }}>
+                                                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                                                        Purchased: {new Date(purchase.purchaseDate).toLocaleDateString()}
+                                                    </div>
+                                                    <div style={{ fontSize: '0.75rem', color: '#ef4444', fontWeight: 500, marginTop: '2px' }}>
+                                                        Expires: {calculateExpiryDate(purchase.purchaseDate, policy.tenureValue, policy.tenureUnit)}
+                                                    </div>
+                                                    {purchase.policyDocument && (
+                                                        <a 
+                                                            href={`${API_BASE_URL.replace('/api', '')}/${purchase.policyDocument}`} 
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer"
+                                                            style={{ display: 'inline-block', fontSize: '0.75rem', color: '#2563eb', marginTop: '4px', textDecoration: 'none', fontWeight: 500 }}
+                                                        >
+                                                            View Policy Document
+                                                        </a>
+                                                    )}
+                                                </div>
                                             </div>
-                                            <div style={{ textAlign: 'right' }}>
-                                                <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                                                    Purchased: {new Date(purchase.purchaseDate).toLocaleDateString()}
+
+                                            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.5rem' }}>
+                                                {policy.policyName}
+                                            </h3>
+                                            <div style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '1.5rem' }}>
+                                                {policy.policyType?.name} • {policy.planName}
+                                            </div>
+
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                                                <div>
+                                                    <div style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '0.25rem' }}>Premium Amount</div>
+                                                    <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0f172a' }}>
+                                                        ${policy.premiumAmount?.toLocaleString()}
+                                                    </div>
                                                 </div>
-                                                <div style={{ fontSize: '0.75rem', color: '#ef4444', fontWeight: 500, marginTop: '2px' }}>
-                                                    Expires: {calculateExpiryDate(purchase.purchaseDate, policy.tenureValue, policy.tenureUnit)}
+                                                <div>
+                                                    <div style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '0.25rem' }}>Coverage Limit</div>
+                                                    <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0f172a' }}>
+                                                        ${policy.coverageAmount?.toLocaleString()}
+                                                    </div>
                                                 </div>
-                                                {purchase.policyDocument && (
-                                                    <a 
-                                                        href={`${API_BASE_URL.replace('/api', '')}/${purchase.policyDocument}`} 
-                                                        target="_blank" 
-                                                        rel="noopener noreferrer"
-                                                        style={{ display: 'inline-block', fontSize: '0.75rem', color: '#2563eb', marginTop: '4px', textDecoration: 'none', fontWeight: 500 }}
-                                                    >
-                                                        View Policy Document
-                                                    </a>
+                                                <div>
+                                                    <div style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '0.25rem' }}>Policy Tenure</div>
+                                                    <div style={{ fontWeight: 600, color: '#0f172a' }}>
+                                                        {policy.tenureValue} {policy.tenureUnit}
+                                                    </div>
+                                                </div>
+                                                {policy.provider && (
+                                                    <div>
+                                                        <div style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '0.25rem' }}>Provider</div>
+                                                        <div style={{ fontWeight: 600, color: '#0f172a' }}>
+                                                            {policy.provider.name}
+                                                        </div>
+                                                    </div>
                                                 )}
                                             </div>
                                         </div>
+                                    );
+                                })}
+                            </div>
 
-                                        <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.5rem' }}>
-                                            {policy.policyName}
-                                        </h3>
-                                        <div style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '1.5rem' }}>
-                                            {policy.policyType?.name} • {policy.planName}
-                                        </div>
+                            {/* Policy History (Claimed, Expired, etc) */}
+                            {customer.purchasedPolicies.some(p => p.status !== 'active') && (
+                                <>
+                                    <h3 className="review-section-title" style={{ marginBottom: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '2rem' }}>Policy History</h3>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: '1.5rem' }}>
+                                        {customer.purchasedPolicies.filter(p => p.status !== 'active').map((purchase, index) => {
+                                            const policy = purchase.policy;
+                                            if (!policy) return null;
+                                            return (
+                                                <div key={`history-${index}`} style={{
+                                                    border: '1px solid #e2e8f0',
+                                                    borderRadius: '12px',
+                                                    padding: '1.5rem',
+                                                    backgroundColor: '#f9fafb', // Lighter background for history
+                                                    position: 'relative',
+                                                    opacity: 0.8
+                                                }}>
+                                                    {/* Status Badge */}
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+                                                        <span style={{ 
+                                                            display: 'inline-flex', 
+                                                            alignItems: 'center', 
+                                                            padding: '0.25rem 0.75rem', 
+                                                            borderRadius: '9999px', 
+                                                            fontSize: '0.75rem', 
+                                                            fontWeight: 600,
+                                                            backgroundColor: purchase.status === 'claimed' ? '#dbeafe' : '#f3f4f6',
+                                                            color: purchase.status === 'claimed' ? '#1d4ed8' : '#374151',
+                                                            border: '1px solid transparent',
+                                                            textTransform: 'uppercase'
+                                                        }}>
+                                                            {purchase.status}
+                                                        </span>
+                                                        
+                                                        <div style={{ textAlign: 'right' }}>
+                                                            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                                                                Purchased: {new Date(purchase.purchaseDate).toLocaleDateString()}
+                                                            </div>
+                                                            {purchase.policyDocument && (
+                                                                <a 
+                                                                    href={`${API_BASE_URL.replace('/api', '')}/${purchase.policyDocument}`} 
+                                                                    target="_blank" 
+                                                                    rel="noopener noreferrer"
+                                                                    style={{ display: 'inline-block', fontSize: '0.75rem', color: '#2563eb', marginTop: '4px', textDecoration: 'none', fontWeight: 500 }}
+                                                                >
+                                                                    View Policy Document
+                                                                </a>
+                                                            )}
+                                                        </div>
+                                                    </div>
 
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                                            <div>
-                                                <div style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '0.25rem' }}>Premium Amount</div>
-                                                <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0f172a' }}>
-                                                    ${policy.premiumAmount?.toLocaleString()}
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <div style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '0.25rem' }}>Coverage Limit</div>
-                                                <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0f172a' }}>
-                                                    ${policy.coverageAmount?.toLocaleString()}
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <div style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '0.25rem' }}>Policy Tenure</div>
-                                                <div style={{ fontWeight: 600, color: '#0f172a' }}>
-                                                    {policy.tenureValue} {policy.tenureUnit}
-                                                </div>
-                                            </div>
-                                            {policy.provider && (
-                                                <div>
-                                                    <div style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '0.25rem' }}>Provider</div>
-                                                    <div style={{ fontWeight: 600, color: '#0f172a' }}>
-                                                        {policy.provider.name}
+                                                    <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#4b5563', marginBottom: '0.5rem' }}>
+                                                        {policy.policyName}
+                                                    </h3>
+                                                    <div style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '1.5rem' }}>
+                                                        {policy.policyType?.name} • {policy.planName}
+                                                    </div>
+
+                                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                                                        <div>
+                                                            <div style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '0.25rem' }}>Premium Amount</div>
+                                                            <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#4b5563' }}>
+                                                                ${policy.premiumAmount?.toLocaleString()}
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <div style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '0.25rem' }}>Coverage Limit</div>
+                                                            <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#4b5563' }}>
+                                                                ${policy.coverageAmount?.toLocaleString()}
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            )}
-                                        </div>
+                                            );
+                                        })}
                                     </div>
-                                );
-                            })}
-                        </div>
+                                </>
+                            )}
+                        </>
                     ) : customer.selectedPolicy ? (
                         // Fallback for legacy single policy
                         <div style={{

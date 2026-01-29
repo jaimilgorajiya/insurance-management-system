@@ -1,4 +1,5 @@
 import { User } from "../models/user.models.js";
+import { Claim } from "../models/claim.models.js";
 import { comparePassword } from "@jaimilgorajiya/password-utils";
 import { generateTokenAndResponse } from "../utils/generateToken.js";
 import { createUser } from "../services/userService.js";
@@ -269,6 +270,33 @@ export const getAdminDashboardStats = async (req, res) => {
             }
         });
 
+        // Fetch Real Claims Data
+        const claims = await Claim.find().populate('customer', 'name');
+        
+        let claimsStats = {
+            approved: 0,
+            pending: 0,
+            rejected: 0,
+            total: claims.length
+        };
+
+        claims.forEach(claim => {
+            // Count Status
+            const status = claim.status?.toLowerCase();
+            if (status === 'approved') claimsStats.approved++;
+            else if (status === 'rejected') claimsStats.rejected++;
+            else claimsStats.pending++; // Default or 'submitted' counts as pending for dashboard summary
+
+            // Add to Activity Stream
+            activities.push({
+                type: 'CLAIM_FILED',
+                title: 'New claim filed',
+                subtitle: `Customer: ${claim.customer?.name || 'Unknown'} - $${claim.requestedAmount}`,
+                date: new Date(claim.createdAt),
+                status: claim.status || 'Pending'
+            });
+        });
+
         // Sort activities by date desc and take top 5
         activities.sort((a, b) => b.date - a.date);
         const recentActivities = activities.slice(0, 5);
@@ -293,12 +321,7 @@ export const getAdminDashboardStats = async (req, res) => {
                 totalRevenue,
                 policyDistribution,
                 monthlyRevenue,
-                claimsStats: { // Mocked as requested
-                    approved: 0,
-                    pending: 0,
-                    rejected: 0,
-                    total: 0
-                },
+                claimsStats,
                 recentActivities
             }
         });

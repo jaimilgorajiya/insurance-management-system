@@ -68,7 +68,8 @@ const CreateClaim = () => {
             });
             if (res.data.success) {
                 const customerData = res.data.data;
-                const activePolicies = customerData.purchasedPolicies || [];
+                // Only show active policies for creating new claims
+                const activePolicies = (customerData.purchasedPolicies || []).filter(p => p.status === 'active');
                 setPolicies(activePolicies);
             }
         } catch (error) {
@@ -287,6 +288,11 @@ const CreateClaim = () => {
                                 readOnly={isMaturity}
                                 style={{ backgroundColor: isMaturity ? '#f3f4f6' : 'white', cursor: isMaturity ? 'not-allowed' : 'text' }}
                             />
+                            {!isMaturity && selectedPolicy?.policy?.coverageAmount && Number(formData.requestedAmount) > selectedPolicy.policy.coverageAmount && (
+                                <p style={{ fontSize: '0.75rem', color: '#d97706', marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: 500 }}>
+                                    ⚠️ Warning: Claim amount exceeds policy coverage (${selectedPolicy.policy.coverageAmount.toLocaleString()})
+                                </p>
+                            )}
                         </div>
 
                         <div className="form-group" style={{ gridColumn: 'span 2' }}>
@@ -424,7 +430,7 @@ const CreateClaim = () => {
 
                 {/* Stepper */}
                 <div className="stepper-container">
-                    {steps.map((step, index) => (
+                    {steps.filter(step => !(formData.type === 'Maturity' && step.id === 3)).map((step, index, arr) => (
                         <div key={step.id} className="stepper-item">
                             <div className={`stepper-circle ${
                                 currentStep === step.id ? 'active' : 
@@ -436,7 +442,7 @@ const CreateClaim = () => {
                                 <span className="stepper-label">Step {step.id}</span>
                                 <span className="stepper-title">{step.title}</span>
                             </div>
-                            {index < steps.length - 1 && (
+                            {index < arr.length - 1 && (
                                 <div className={`stepper-line ${currentStep > step.id ? 'completed' : 'inactive'}`} />
                             )}
                         </div>
@@ -452,8 +458,13 @@ const CreateClaim = () => {
                     {/* Navigation Buttons */}
                     <div className="form-navigation" style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem' }}>
                         <button
-                            disabled={currentStep === 1}
-                            onClick={() => setCurrentStep(curr => curr - 1)}
+                            onClick={() => {
+                                if (currentStep === 4 && formData.type === 'Maturity') {
+                                    setCurrentStep(2);
+                                    return;
+                                }
+                                setCurrentStep(curr => curr - 1);
+                            }}
                             className="btn-outline"
                             style={{ opacity: currentStep === 1 ? 0.5 : 1, cursor: currentStep === 1 ? 'not-allowed' : 'pointer' }}
                         >
@@ -475,12 +486,18 @@ const CreateClaim = () => {
                                     // Validation
                                     if (currentStep === 1 && (!formData.customerId || !formData.policyId)) return showErrorAlert('Please select customer and policy');
                                     if (currentStep === 2 && (!formData.incidentDate || !formData.requestedAmount)) return showErrorAlert('Please fill in required details');
-                                    // Step 3 (Files) is optional
+                                    
+                                    // Step 3 (Files) is optional but skipped for Maturity
+                                    if (currentStep === 2 && formData.type === 'Maturity') {
+                                        setCurrentStep(4);
+                                        return;
+                                    }
+                                    
                                     setCurrentStep(curr => curr + 1);
                                 }}
                                 className="btn-primary"
                             >
-                                Next Step <ChevronRight size={18} />
+                                {currentStep === 2 && formData.type === 'Maturity' ? 'Review & Submit' : 'Next Step'} <ChevronRight size={18} />
                             </button>
                         )}
                     </div>

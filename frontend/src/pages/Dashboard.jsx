@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import { showWarningAlert } from '../utils/swalUtils';
-import { UserPlus, FileText, FileCheck, Clock, DollarSign, TrendingUp, Users, Target } from 'lucide-react';
+import { UserPlus, FileText, FileCheck, Clock, DollarSign, TrendingUp, Users, Target, AlertCircle } from 'lucide-react';
 import { 
     PieChart, Pie, Cell, Tooltip, ResponsiveContainer, 
     LineChart, Line, XAxis, YAxis, CartesianGrid 
@@ -185,10 +185,11 @@ export const AdminDashboard = () => {
                                     <div key={index} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', paddingBottom: '1rem', borderBottom: index < stats.recentActivities.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
                                         <div style={{ 
                                             padding: '0.5rem', borderRadius: '50%', 
-                                            backgroundColor: activity.type === 'USER_ONBOARDED' ? '#eff6ff' : '#ecfdf5',
-                                            color: activity.type === 'USER_ONBOARDED' ? '#3b82f6' : '#10b981'
+                                            backgroundColor: activity.type === 'USER_ONBOARDED' ? '#eff6ff' : activity.type === 'CLAIM_FILED' ? '#fff7ed' : '#ecfdf5',
+                                            color: activity.type === 'USER_ONBOARDED' ? '#3b82f6' : activity.type === 'CLAIM_FILED' ? '#c2410c' : '#10b981'
                                         }}>
-                                            {activity.type === 'USER_ONBOARDED' ? <UserPlus size={20} /> : <FileText size={20} />}
+                                            {activity.type === 'USER_ONBOARDED' ? <UserPlus size={20} /> : 
+                                             activity.type === 'CLAIM_FILED' ? <AlertCircle size={20} /> : <FileText size={20} />}
                                         </div>
                                         <div style={{ flex: 1 }}>
                                             <p style={{ margin: 0, fontWeight: 500, color: '#0f172a' }}>{activity.title}</p>
