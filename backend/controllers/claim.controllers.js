@@ -32,14 +32,75 @@ export const createClaim = asyncHandler(async (req, res) => {
     }
 
     // Verify Policy Ownership and Validity
+    // Verify Policy Ownership and Validity
     const customer = await User.findById(targetCustomerId);
     if (!customer) throw new ApiError(404, "Customer not found");
 
-    const policy = customer.purchasedPolicies.find(p => p.policy.toString() === policyId);
-    if (!policy) throw new ApiError(403, "This policy does not belong to the selected customer");
+    const purchasedPolicy = customer.purchasedPolicies.find(p => p.policy.toString() === policyId);
+    if (!purchasedPolicy) throw new ApiError(403, "This policy does not belong to the selected customer");
     
-    if (policy.status !== 'active') {
-        throw new ApiError(400, `Cannot create claim: Policy is ${policy.status}`);
+    if (purchasedPolicy.status !== 'active') {
+        throw new ApiError(400, `Cannot create claim: Policy is ${purchasedPolicy.status}`);
+    }
+
+    // Fetch full policy details for calculation
+    const policyDetails = await Policy.findById(policyId);
+    if (!policyDetails) throw new ApiError(404, "Policy details not found");
+
+    // Maturity Logic Preparation
+    let maturityData = {};
+    if (type === 'Maturity') {
+        const startDate = new Date(purchasedPolicy.purchaseDate);
+        const claimDate = new Date(incidentDate);
+        let expiryDate = new Date(startDate);
+
+        // Calculate Expiry Date
+        if (policyDetails.tenureUnit === 'years') {
+            expiryDate.setFullYear(expiryDate.getFullYear() + policyDetails.tenureValue);
+        } else if (policyDetails.tenureUnit === 'months') {
+            expiryDate.setMonth(expiryDate.getMonth() + policyDetails.tenureValue);
+        } else { // days
+            expiryDate.setDate(expiryDate.getDate() + policyDetails.tenureValue);
+        }
+
+        // 1. Calculate Payable Amount
+        let calculatedPayable = 0;
+        let maturityType = "ON_TIME";
+
+        if (claimDate >= expiryDate) {
+            // Full Maturity
+            calculatedPayable = policyDetails.coverageAmount;
+            maturityType = "ON_TIME";
+        } else {
+            // Early Maturity
+            maturityType = "EARLY";
+            const totalDuration = expiryDate.getTime() - startDate.getTime();
+            const elapsedDuration = claimDate.getTime() - startDate.getTime();
+            
+            // Avoid division by zero
+            if (totalDuration <= 0) {
+                 calculatedPayable = policyDetails.coverageAmount; // Fallback
+            } else {
+                // Ratio can't be negative
+                const ratio = Math.max(0, elapsedDuration / totalDuration);
+                calculatedPayable = policyDetails.coverageAmount * ratio;
+            }
+        }
+        
+        // Formatting to 2 decimals
+        calculatedPayable = Math.round(calculatedPayable * 100) / 100;
+
+        // 2. Validate Requested Amount
+        // Allow a small epsilon for floating point differences or just strict comparison
+        if (Number(requestedAmount) > calculatedPayable + 1) { // +1 buffer for rounding
+             throw new ApiError(400, `Requested amount (${requestedAmount}) exceeds eligible maturity amount (${calculatedPayable})`);
+        }
+
+        maturityData = {
+            maturityType,
+            policyExpiryDate: expiryDate,
+            calculatedPayableAmount: calculatedPayable
+        };
     }
     
     // Check if duplicate claim exists (basic check)
@@ -62,7 +123,8 @@ export const createClaim = asyncHandler(async (req, res) => {
             changedBy: req.user._id,
             date: new Date(),
             note: "Claim created"
-        }]
+        }],
+        ...maturityData
     });
 
     // Mark policy as 'claimed' so it doesn't show in active lists

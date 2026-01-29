@@ -1,4 +1,5 @@
 import { User } from "../models/user.models.js";
+import { Role } from "../models/role.models.js";
 import { validatePassword, hashPassword } from "@jaimilgorajiya/password-utils";
 import { sendCredentialsEmail } from "./emailService.js";
 import { sendWelcomeSMS } from "./smsService.js";
@@ -70,6 +71,9 @@ export const createUser = async (userData, createdBy = null) => {
         // Hash the password
         const hashedPassword = await hashPassword(tempPassword);
 
+        // Fetch global role permissions to ensure consistency
+        const roleDoc = await Role.findOne({ name: role });
+
         // Prepare user data
         const newUserData = {
             name: name?.trim() || "",
@@ -78,7 +82,8 @@ export const createUser = async (userData, createdBy = null) => {
             password: hashedPassword,
             role,
             status: "active",
-            createdAt: new Date()
+            createdAt: new Date(),
+            permissions: roleDoc ? roleDoc.permissions : undefined // Inherit role permissions or fallback to schema default
         };
 
         // Add createdBy if provided

@@ -25,6 +25,7 @@ import AgentPermissions from './pages/AgentPermissions';
 import Profile from './pages/Profile';
 import Claims from './pages/Claims';
 import CreateClaim from './pages/CreateClaim';
+import Reports from './pages/Reports';
 import ClaimDetails from './pages/ClaimDetails';
 
 function App() {
@@ -86,7 +87,7 @@ function App() {
           <Route path="/admin/policy-types" element={<PolicyTypes />} />
           <Route path="/admin/providers" element={<Providers />} />
           <Route path="/admin/documents" element={<Documents />} />
-          <Route path="/admin/reports" element={<ReportsPlaceholder />} />
+          <Route path="/admin/reports" element={<Reports />} />
         </Route>
 
         {/* Agent Only Routes */}

@@ -64,6 +64,17 @@ const claimSchema = new mongoose.Schema({
         date: { type: Date, default: Date.now },
         note: String
     }],
+    // Maturity specific fields
+    maturityType: {
+        type: String,
+        enum: ["EARLY", "ON_TIME"]
+    },
+    policyExpiryDate: {
+        type: Date
+    },
+    calculatedPayableAmount: {
+        type: Number
+    },
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User"

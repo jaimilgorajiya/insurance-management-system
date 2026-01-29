@@ -7,7 +7,7 @@ import {
     addClaimNote,
     uploadClaimDocument
 } from "../controllers/claim.controllers.js";
-import { verifyJWT } from "../middlewares/auth.middleware.js";
+import { verifyJWT, checkPermission } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middleware.js"; // Assessing multer is available
 
 const router = Router();
@@ -15,19 +15,19 @@ const router = Router();
 router.use(verifyJWT);
 
 router.route("/")
-    .post(createClaim)
-    .get(getClaims);
+    .post(checkPermission("claims", "create"), createClaim)
+    .get(checkPermission("claims", "view"), getClaims);
 
 router.route("/:id")
-    .get(getClaimById);
+    .get(checkPermission("claims", "view"), getClaimById);
 
 router.route("/:id/status")
-    .put(updateClaimStatus);
+    .put(checkPermission("claims", "edit"), updateClaimStatus);
 
 router.route("/:id/notes")
-    .post(addClaimNote);
+    .post(checkPermission("claims", "edit"), addClaimNote);
 
 router.route("/:id/documents")
-    .post(upload.single("document"), uploadClaimDocument);
+    .post(checkPermission("claims", "create"), upload.single("document"), uploadClaimDocument);
 
 export default router;

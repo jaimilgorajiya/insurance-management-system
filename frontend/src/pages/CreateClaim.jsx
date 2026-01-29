@@ -204,6 +204,44 @@ const CreateClaim = () => {
                 const selectedPolicy = policies.find(p => p.policy._id === formData.policyId);
                 const isTravelPolicy = selectedPolicy?.policy?.policyType?.name?.toLowerCase().includes('travel');
 
+                // Maturity Calculation
+                let maturityInfo = null;
+                if (isMaturity && selectedPolicy && formData.incidentDate) {
+                    const startDate = new Date(selectedPolicy.purchaseDate);
+                    const claimDate = new Date(formData.incidentDate);
+                    const policy = selectedPolicy.policy;
+                    
+                    let expiryDate = new Date(startDate);
+                    if (policy.tenureUnit === 'years') expiryDate.setFullYear(expiryDate.getFullYear() + policy.tenureValue);
+                    else if (policy.tenureUnit === 'months') expiryDate.setMonth(expiryDate.getMonth() + policy.tenureValue);
+                    else expiryDate.setDate(expiryDate.getDate() + policy.tenureValue);
+
+                    let payable = 0;
+                    let type = "ON_TIME";
+                    
+                    if (claimDate >= expiryDate) {
+                        payable = policy.coverageAmount;
+                        type = "ON_TIME";
+                    } else {
+                        type = "EARLY";
+                        const totalDuration = expiryDate.getTime() - startDate.getTime();
+                        const elapsedDuration = claimDate.getTime() - startDate.getTime();
+                        if (totalDuration > 0) {
+                            const ratio = Math.max(0, elapsedDuration / totalDuration);
+                            payable = policy.coverageAmount * ratio;
+                        } else {
+                            payable = policy.coverageAmount;
+                        }
+                    }
+                    
+                    maturityInfo = {
+                        startDate,
+                        expiryDate,
+                        payable: Math.round(payable * 100) / 100,
+                        type
+                    };
+                }
+
                 return (
                     <div className="form-grid">
                         <div className="form-group" style={{ gridColumn: 'span 2', marginBottom: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem' }}>
@@ -214,7 +252,7 @@ const CreateClaim = () => {
                                         type="radio" 
                                         name="claimCategory" 
                                         checked={!isMaturity}
-                                        onChange={() => setFormData({...formData, type: 'Theft'})} 
+                                        onChange={() => setFormData({...formData, type: 'Theft', requestedAmount: ''})} 
                                     />
                                     <span style={{ fontWeight: 500, color: '#0f172a' }}>Accident / Incident</span>
                                 </label>
@@ -235,11 +273,10 @@ const CreateClaim = () => {
                                         disabled={isTravelPolicy}
                                         onChange={() => {
                                             if (isTravelPolicy) return;
-                                            const maturityAmount = selectedPolicy ? selectedPolicy.policy.coverageAmount : '';
                                             setFormData({
                                                 ...formData, 
                                                 type: 'Maturity',
-                                                requestedAmount: maturityAmount
+                                                requestedAmount: '' // Reset to force calculation/entry
                                             });
                                         }}
                                     />
@@ -277,17 +314,56 @@ const CreateClaim = () => {
                             />
                         </div>
 
+                        {/* Maturity Details Section */}
+                        {isMaturity && maturityInfo && (
+                            <div className="form-group" style={{ gridColumn: 'span 2', layout: 'flex', gap: '1rem', backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                                    <div>
+                                        <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block' }}>Policy Start Date</span>
+                                        <span style={{ fontWeight: 500 }}>{maturityInfo.startDate.toLocaleDateString()}</span>
+                                    </div>
+                                    <div>
+                                        <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block' }}>Policy Expiry Date</span>
+                                        <span style={{ fontWeight: 500 }}>{maturityInfo.expiryDate.toLocaleDateString()}</span>
+                                    </div>
+                                    <div>
+                                        <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block' }}>Coverage Amount</span>
+                                        <span style={{ fontWeight: 500 }}>${selectedPolicy.policy.coverageAmount.toLocaleString()}</span>
+                                    </div>
+                                    {/* Eligible Amount hidden as per request */}
+                                    {/* <div>
+                                        <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block' }}>Eligible Maturity Amount</span>
+                                        <span style={{ fontWeight: 600, color: '#2563eb', fontSize: '1.1rem' }}>${maturityInfo.payable.toLocaleString()}</span>
+                                    </div> */}
+                                </div>
+                                <div style={{ padding: '0.75rem', borderRadius: '6px', backgroundColor: maturityInfo.type === 'EARLY' ? '#fff7ed' : '#f0fdf4', border: `1px solid ${maturityInfo.type === 'EARLY' ? '#fdba74' : '#86efac'}` }}>
+                                    <p style={{ fontSize: '0.875rem', color: maturityInfo.type === 'EARLY' ? '#c2410c' : '#15803d', margin: 0 }}>
+                                        {maturityInfo.type === 'EARLY' 
+                                            ? "⚠️ Early maturity detected. Payable amount adjusted based on policy duration."
+                                            : "✅ Policy maturity completed. Full coverage eligible."}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
                         <div className="form-group">
-                            <label className="form-label">{isMaturity ? 'Claim Amount / Payout ($)' : 'Estimated Claim Amount ($)'}</label>
+                            <label className="form-label">{isMaturity ? 'Requested Payout Amount ($)' : 'Estimated Claim Amount ($)'}</label>
                             <input 
                                 type="number"
                                 className="form-input"
                                 placeholder="0.00"
                                 value={formData.requestedAmount}
                                 onChange={(e) => setFormData({...formData, requestedAmount: e.target.value})}
-                                readOnly={isMaturity}
-                                style={{ backgroundColor: isMaturity ? '#f3f4f6' : 'white', cursor: isMaturity ? 'not-allowed' : 'text' }}
-                            />
+                                style={{ backgroundColor: 'white' }}
+                            /> 
+                            
+                            {/* Validation / Warnings */}
+                            {isMaturity && maturityInfo && Number(formData.requestedAmount) > maturityInfo.payable && (
+                                <p style={{ fontSize: '0.75rem', color: '#dc2626', marginTop: '0.5rem', fontWeight: 600 }}>
+                                    ⛔ Error: Requested amount cannot exceed eligible amount (${maturityInfo.payable.toLocaleString()})
+                                </p>
+                            )}
+
                             {!isMaturity && selectedPolicy?.policy?.coverageAmount && Number(formData.requestedAmount) > selectedPolicy.policy.coverageAmount && (
                                 <p style={{ fontSize: '0.75rem', color: '#d97706', marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: 500 }}>
                                     ⚠️ Warning: Claim amount exceeds policy coverage (${selectedPolicy.policy.coverageAmount.toLocaleString()})
@@ -397,10 +473,12 @@ const CreateClaim = () => {
                                 <span className="review-label">Date</span>
                                 <span className="review-value">{formData.incidentDate}</span>
                             </div>
-                            <div className="review-item">
-                                <span className="review-label">Requested Amount</span>
-                                <span className="review-value" style={{ color: '#2563eb', fontSize: '1.1rem' }}>${Number(formData.requestedAmount).toLocaleString()}</span>
-                            </div>
+                            {formData.type !== 'Maturity' && (
+                                <div className="review-item">
+                                    <span className="review-label">Requested Amount</span>
+                                    <span className="review-value" style={{ color: '#2563eb', fontSize: '1.1rem' }}>${Number(formData.requestedAmount).toLocaleString()}</span>
+                                </div>
+                            )}
                              <div className="review-item">
                                 <span className="review-label">Documents</span>
                                 <span className="review-value">{files.length} attached</span>
@@ -485,10 +563,54 @@ const CreateClaim = () => {
                                 onClick={() => {
                                     // Validation
                                     if (currentStep === 1 && (!formData.customerId || !formData.policyId)) return showErrorAlert('Please select customer and policy');
-                                    if (currentStep === 2 && (!formData.incidentDate || !formData.requestedAmount)) return showErrorAlert('Please fill in required details');
+                                    
+                                    const isMaturity = formData.type === 'Maturity';
+                                    if (currentStep === 2) {
+                                        if (!formData.incidentDate) return showErrorAlert('Please fill in required details');
+                                        if (!isMaturity && !formData.requestedAmount) return showErrorAlert('Please enter requested amount');
+                                    }
                                     
                                     // Step 3 (Files) is optional but skipped for Maturity
-                                    if (currentStep === 2 && formData.type === 'Maturity') {
+                                    if (currentStep === 2 && isMaturity) {
+                                        // Maturity Validation
+                                        const selectedPolicy = policies.find(p => p.policy._id === formData.policyId);
+                                        if (selectedPolicy) {
+                                            const startDate = new Date(selectedPolicy.purchaseDate);
+                                            const claimDate = new Date(formData.incidentDate);
+                                            const policy = selectedPolicy.policy;
+                                            
+                                            let expiryDate = new Date(startDate);
+                                            if (policy.tenureUnit === 'years') expiryDate.setFullYear(expiryDate.getFullYear() + policy.tenureValue);
+                                            else if (policy.tenureUnit === 'months') expiryDate.setMonth(expiryDate.getMonth() + policy.tenureValue);
+                                            else expiryDate.setDate(expiryDate.getDate() + policy.tenureValue);
+
+                                            let payable = 0;
+                                            if (claimDate >= expiryDate) {
+                                                payable = policy.coverageAmount;
+                                            } else {
+                                                const totalDuration = expiryDate.getTime() - startDate.getTime();
+                                                const elapsedDuration = claimDate.getTime() - startDate.getTime();
+                                                if (totalDuration > 0) {
+                                                    const ratio = Math.max(0, elapsedDuration / totalDuration);
+                                                    payable = policy.coverageAmount * ratio;
+                                                } else {
+                                                    payable = policy.coverageAmount;
+                                                }
+                                            }
+                                            
+                                            // Rounding for consistent comparison
+                                            payable = Math.round(payable * 100) / 100;
+
+                                            if (formData.requestedAmount && Number(formData.requestedAmount) > payable) {
+                                                 return showErrorAlert(`Requested amount exceeds eligible limit ($${payable.toLocaleString()})`);
+                                            }
+                                            
+                                            // If amount not entered, use calculated amount (stored but not forced on user to type)
+                                            if (!formData.requestedAmount) {
+                                                setFormData(prev => ({ ...prev, requestedAmount: payable }));
+                                            }
+                                        }
+
                                         setCurrentStep(4);
                                         return;
                                     }
