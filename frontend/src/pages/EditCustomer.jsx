@@ -412,7 +412,7 @@ const EditCustomer = () => {
 
     return (
         <Layout>
-            <div className="onboarding-container">
+            <div className="customers-page">
                 {/* Header */}
                 <div className="onboarding-header">
                     <h1 className="onboarding-title">Edit Customer</h1>

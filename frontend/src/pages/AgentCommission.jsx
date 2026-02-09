@@ -33,11 +33,10 @@ const AgentCommission = () => {
 
     return (
         <Layout>
-            <div className="onboarding-container">
+            <div className="customers-page">
                 <div className="page-header" style={{ marginBottom: '2rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <div style={{ padding: '0.75rem', backgroundColor: '#f0fdf4', borderRadius: '12px', color: '#15803d' }}>
-                            <CommissionIcon size={32} />
                         </div>
                         <div>
                             <h1 className="page-title">My Commissions</h1>

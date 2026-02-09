@@ -84,7 +84,7 @@ const PaymentHistory = () => {
 
     return (
         <Layout>
-            <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
+            <div className="customers-page">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                     <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
@@ -97,7 +97,7 @@ const PaymentHistory = () => {
                                 </button>
                             )}
                             <h1 style={{ fontSize: '1.875rem', fontWeight: 'bold', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                <CreditCard color="#2563eb" /> Payment History
+                               Payment History
                             </h1>
                         </div>
                         <p style={{ color: '#64748b' }}>

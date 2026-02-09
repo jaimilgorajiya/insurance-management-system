@@ -120,7 +120,7 @@ const CustomerDocuments = () => {
 
     return (
         <Layout>
-            <div className="onboarding-container">
+            <div className="customers-page">
                 <div style={{ marginBottom: '1.5rem' }}>
                     <button 
                         onClick={() => navigate('/admin/documents')}

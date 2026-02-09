@@ -43,7 +43,7 @@ const Documents = () => {
 
     return (
         <Layout>
-            <div className="onboarding-container">
+            <div className="customers-page">
                 <div className="page-header">
                     <div>
                         <h1 className="page-title">Document Management</h1>

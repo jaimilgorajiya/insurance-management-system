@@ -169,7 +169,7 @@ const PolicyTypes = () => {
 
     return (
         <Layout>
-            <div className="onboarding-container">
+            <div className="customers-page">
                 <div className="page-header">
                     <div>
                         <button onClick={() => navigate('/admin/policies')} style={{ 

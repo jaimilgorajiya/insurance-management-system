@@ -149,7 +149,7 @@ const EditAgent = () => {
 
     return (
         <Layout>
-            <div className="onboarding-container">
+            <div className="customers-page">
                 <div className="onboarding-header">
                     <button onClick={() => navigate('/admin/agents')} className="btn-outline" style={{marginBottom: '1rem', border: 'none', paddingLeft: 0}}>
                         ← Back to Agents

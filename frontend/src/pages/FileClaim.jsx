@@ -458,7 +458,7 @@ const FileClaim = () => {
 
     return (
         <Layout>
-            <div className="onboarding-container">
+            <div className="customers-page">
                 <div className="page-header">
                     <div>
                         <button onClick={() => navigate('/customer/claims')} className="btn-outline" style={{marginBottom: '1rem', border: 'none', paddingLeft: 0}}>

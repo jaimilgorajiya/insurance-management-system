@@ -228,11 +228,11 @@ export default function Login() {
             </button>
           </form>
         </div>
-        
-        <footer className="login-footer">
-          <p>© 2026 InsureCRM | All rights reserved | Made by Iflora Info Pvt. Ltd.</p>
-        </footer>
       </div>
+      
+      <footer className="login-footer">
+        <p>© 2026 InsureCRM | All rights reserved | Made by <a href="https://iflorainfo.com/" target="_blank" style={{color: "#000000"}}>Iflora Info Pvt. Ltd.</a></p>
+      </footer>
     </div>
   );
 }

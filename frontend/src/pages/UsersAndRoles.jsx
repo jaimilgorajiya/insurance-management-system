@@ -248,7 +248,7 @@ const UsersAndRoles = () => {
 
     return (
         <Layout>
-            <div className="onboarding-container">
+            <div className="customers-page">
                 <div className="page-header" style={{ marginBottom: '2rem' }}>
                     <div>
                         <h1 className="page-title">Users & Roles</h1>

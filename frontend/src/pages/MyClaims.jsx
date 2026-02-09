@@ -116,7 +116,7 @@ const MyClaims = () => {
 
     return (
         <Layout>
-            <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
+            <div className="customers-page">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                     <div>
                         <h1 style={{ fontSize: '1.875rem', fontWeight: 'bold', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>

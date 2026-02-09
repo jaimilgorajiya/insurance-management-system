@@ -57,7 +57,7 @@ const Profile = () => {
 
     return (
         <Layout>
-            <div style={{ maxWidth: '800px', margin: '0 auto', paddingBottom: '2rem' }}>
+            <div className="customers-page" style={{ paddingBottom: '2rem' }}>
                 <div style={{ 
                     backgroundColor: 'white', 
                     borderRadius: '16px', 

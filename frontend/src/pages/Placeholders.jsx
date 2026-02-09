@@ -3,7 +3,7 @@ import Layout from '../components/Layout';
 
 const BasePlaceholder = ({ title, subtitle, icon }) => (
     <Layout>
-        <div className="onboarding-container" style={{ textAlign: 'center', padding: '4rem 2rem' }}>
+        <div className="customers-page" style={{ textAlign: 'center', padding: '4rem 2rem' }}>
             <div style={{ fontSize: '4rem', marginBottom: '1.5rem' }}>{icon}</div>
             <h1 className="onboarding-title">{title}</h1>
             <p className="onboarding-subtitle" style={{ maxWidth: '600px', margin: '0 auto' }}>

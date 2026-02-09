@@ -10,7 +10,6 @@ const AgentDetails = () => {
     const [loading, setLoading] = useState(true);
 
     // Modal State
-    // Modal State
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errors, setErrors] = useState({});
@@ -143,7 +142,7 @@ const AgentDetails = () => {
 
     return (
         <Layout>
-            <div className="onboarding-container">
+            <div className="customers-page">
                 <div className="page-header">
                     <div>
                         <button onClick={() => navigate('/admin/agents')} className="btn-outline" style={{marginBottom: '1rem', border: 'none', paddingLeft: 0}}>

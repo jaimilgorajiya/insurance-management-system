@@ -445,7 +445,7 @@ const Policies = () => {
 
     return (
         <Layout>
-            <div className="onboarding-container">
+            <div className="customers-page">
                 <div className="page-header">
                     <div>
                         <h1 className="page-title">Policies</h1>
@@ -645,7 +645,7 @@ const Policies = () => {
                                     <th>Premium</th>
                                     <th>Coverage</th>
                                     <th>Tenure</th>
-                                    <th>Status</th>
+                                    {localStorage.getItem('userRole') !== 'agent' && <th>Status</th>}
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -709,27 +709,29 @@ const Policies = () => {
                                             <td style={{ fontSize: '0.8125rem', color: '#475569', fontWeight: 600 }}>
                                                 {policy.tenureValue} {policy.tenureUnit}
                                             </td>
-                                            <td>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                                    <label className="switch" style={{ opacity: localStorage.getItem('userRole') === 'admin' ? 1 : 0.6, cursor: localStorage.getItem('userRole') === 'admin' ? 'pointer' : 'not-allowed' }}>
-                                                        <input 
-                                                            type="checkbox" 
-                                                            checked={policy.status === 'active'}
-                                                            onChange={() => localStorage.getItem('userRole') === 'admin' && handleToggleStatus(policy._id, policy.status)}
-                                                            disabled={localStorage.getItem('userRole') !== 'admin'}
-                                                        />
-                                                        <span className="slider-round"></span>
-                                                    </label>
-                                                    <span style={{ 
-                                                        fontSize: '0.75rem', 
-                                                        fontWeight: 600,
-                                                        color: policy.status === 'active' ? '#10b981' : '#64748b',
-                                                        textTransform: 'capitalize'
-                                                    }}>
-                                                        {policy.status}
-                                                    </span>
-                                                </div>
-                                            </td>
+                                            {localStorage.getItem('userRole') !== 'agent' && (
+                                                <td>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                        <label className="switch" style={{ opacity: localStorage.getItem('userRole') === 'admin' ? 1 : 0.6, cursor: localStorage.getItem('userRole') === 'admin' ? 'pointer' : 'not-allowed' }}>
+                                                            <input 
+                                                                type="checkbox" 
+                                                                checked={policy.status === 'active'}
+                                                                onChange={() => localStorage.getItem('userRole') === 'admin' && handleToggleStatus(policy._id, policy.status)}
+                                                                disabled={localStorage.getItem('userRole') !== 'admin'}
+                                                            />
+                                                            <span className="slider-round"></span>
+                                                        </label>
+                                                        <span style={{ 
+                                                            fontSize: '0.75rem', 
+                                                            fontWeight: 600,
+                                                            color: policy.status === 'active' ? '#10b981' : '#64748b',
+                                                            textTransform: 'capitalize'
+                                                        }}>
+                                                            {policy.status}
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                            )}
                                             <td>
                                                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                                                     {selectForCustomer ? (

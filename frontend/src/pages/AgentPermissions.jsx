@@ -112,7 +112,7 @@ const AgentPermissions = () => {
 
     return (
         <Layout>
-            <div className="onboarding-container">
+            <div className="customers-page">
                 <div className="page-header" style={{ marginBottom: '2rem' }}>
                     <div>
                         <button onClick={() => navigate('/admin/agents')} className="btn-outline" style={{ border: 'none', padding: 0, marginBottom: '1rem', color: '#64748b' }}>

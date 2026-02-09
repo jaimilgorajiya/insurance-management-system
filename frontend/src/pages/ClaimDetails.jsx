@@ -157,7 +157,7 @@ const ClaimDetails = () => {
 
     return (
         <Layout>
-            <div className="onboarding-container">
+            <div className="customers-page">
                 {/* Header Section */}
                 <div style={{ marginBottom: '1.5rem' }}>
                     <button 
