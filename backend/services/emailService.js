@@ -119,7 +119,125 @@ export const sendPolicyDocumentEmail = async (emailData) => {
     }
 };
 
+
+
 /**
+ * Send payment reminder email
+ * @param {Object} emailData
+ */
+export const sendPaymentReminderEmail = async (emailData) => {
+    try {
+        const { email, name, policyName, amount, dueDate, policyId } = emailData;
+        const transporter = createTransporter();
+        const appName = "Insurance CRM";
+        
+        // Link to the policies page
+        const paymentLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/customer/policies?highlight=${policyId}`;
+
+        const mailOptions = {
+            from: `"${appName}" <${process.env.SMTP_USER}>`,
+            to: email,
+            subject: `Payment Reminder - ${policyName} Premium Due`,
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    <div style="background-color: #2563eb; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+                        <h1>${appName}</h1>
+                    </div>
+                    <div style="padding: 20px;">
+                        <h2>Hello ${name},</h2>
+                        <p>This is a reminder that the premium payment for your policy <strong>${policyName}</strong> is due in 7 days.</p>
+                        
+                        <div style="background-color: #f1f5f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                            <p><strong>Policy:</strong> ${policyName}</p>
+                            <p><strong>Amount Due:</strong> $${amount}</p>
+                            <p><strong>Due Date:</strong> ${new Date(dueDate).toLocaleDateString()}</p>
+                        </div>
+
+                        <p>Please ensure timely payment to keep your policy active and enjoy uninterrupted benefits.</p>
+
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="${paymentLink}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                                Pay Premium Now
+                            </a>
+                        </div>
+                        
+                        <p>If you have already made this payment, please ignore this email.</p>
+                    </div>
+                    <div style="text-align: center; font-size: 12px; color: #64748b; margin-top: 20px;">
+                        <p>&copy; ${new Date().getFullYear()} ${appName}. All rights reserved.</p>
+                    </div>
+                </div>
+            `
+        };
+
+        const info = await transporter.sendMail(mailOptions);
+        console.log(`✅ Payment reminder sent to ${email} (Message ID: ${info.messageId})`);
+        return { success: true, messageId: info.messageId };
+
+    } catch (error) {
+        console.error("❌ Email sending error:", error.message);
+        return { success: false, error: error.message };
+    }
+};
+
+
+/**
+ * Send payment receipt email
+ * @param {Object} emailData
+ */
+export const sendPaymentReceiptEmail = async (emailData) => {
+    try {
+        const { email, name, policyName, amount, receiptPath } = emailData;
+        const transporter = createTransporter();
+        const appName = "Insurance CRM";
+
+        const mailOptions = {
+            from: `"${appName}" <${process.env.SMTP_USER}>`,
+            to: email,
+            subject: `Payment Receipt - ${policyName} Premium Payment - ${appName}`,
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    <div style="background-color: #10b981; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+                        <h1>${appName}</h1>
+                    </div>
+                    <div style="padding: 20px;">
+                        <h2>Hello ${name},</h2>
+                        <p>We are pleased to inform you that your premium payment for <strong>${policyName}</strong> has been successfully processed.</p>
+                        
+                        <div style="background-color: #f0fdf4; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981;">
+                            <p><strong>Policy:</strong> ${policyName}</p>
+                            <p><strong>Amount Paid:</strong> INR ${amount}</p>
+                            <p><strong>Status:</strong> Success</p>
+                        </div>
+                        
+                        <p>Please find the payment receipt attached to this email.</p>
+                        <br>
+                        <p>Thank you for choosing ${appName}. We appreciate your business!</p>
+                    </div>
+                    <div style="text-align: center; font-size: 12px; color: #64748b; margin-top: 20px;">
+                        <p>&copy; ${new Date().getFullYear()} ${appName}. All rights reserved.</p>
+                    </div>
+                </div>
+            `,
+            attachments: [
+                {
+                    filename: `Receipt-${policyName.replace(/\s+/g, '-')}.pdf`,
+                    path: receiptPath
+                }
+            ]
+        };
+
+        const info = await transporter.sendMail(mailOptions);
+        console.log(`✅ Payment receipt email sent to ${email} (Message ID: ${info.messageId})`);
+        return { success: true, messageId: info.messageId };
+    } catch (error) {
+        console.error("❌ Email sending error:", error.message);
+        return { success: false, error: error.message };
+    }
+};
+
+/**
+
  * Generate HTML email template
  * @param {Object} data - Template data
  * @returns {string} HTML email content

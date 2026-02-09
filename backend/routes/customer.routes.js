@@ -18,8 +18,8 @@ router.post("/email-draft/:id", verifyJWT, authorizeRoles("admin", "agent"), gen
 // --- CUSTOMER MANAGEMENT (Admin/Agent Access) ---
 router.get("/", verifyJWT, authorizeRoles("admin", "agent"), checkPermission("customers", "view"), getCustomers);
 router.get("/all", verifyJWT, authorizeRoles("admin", "agent"), checkPermission("customers", "view"), getCustomers);
-router.get("/:id", verifyJWT, authorizeRoles("admin", "agent"), checkPermission("customers", "view"), getCustomerById);
-router.put("/update/:id", verifyJWT, authorizeRoles("admin", "agent"), updateCustomer);
+router.get("/:id", verifyJWT, authorizeRoles("admin", "agent", "customer"), getCustomerById);
+router.put("/update/:id", verifyJWT, authorizeRoles("admin", "agent", "customer"), updateCustomer);
 router.delete("/delete/:id", verifyJWT, authorizeRoles("admin", "agent"), checkPermission("customers", "delete"), deleteCustomer);
 
 // --- SUB-CUSTOMER MANAGEMENT (Customer Access) ---

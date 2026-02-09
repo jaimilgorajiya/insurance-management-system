@@ -161,7 +161,7 @@ const ClaimDetails = () => {
                 {/* Header Section */}
                 <div style={{ marginBottom: '1.5rem' }}>
                     <button 
-                        onClick={() => navigate('/admin/claims')} 
+                        onClick={() => navigate(userRole === 'customer' ? '/customer/claims' : '/admin/claims')} 
                         className="btn-outline" 
                         style={{ border: 'none', paddingLeft: 0, marginBottom: '1rem', color: '#64748b' }}
                     >
@@ -262,12 +262,14 @@ const ClaimDetails = () => {
                                     <p style={{ fontSize: '0.9rem', marginBottom: '0.25rem' }}><span style={{fontWeight: 600}}>{claim.customer?.name}</span></p>
                                     <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '0.25rem' }}>{claim.customer?.email}</p>
                                     <p style={{ fontSize: '0.85rem', color: '#64748b' }}>{claim.customer?.mobile || 'No phone'}</p>
-                                    <button 
-                                        onClick={() => navigate(`/admin/customer/${claim.customer?._id}`)}
-                                        style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: '0.8rem', cursor: 'pointer', padding: 0, marginTop: '0.5rem', textDecoration: 'underline' }}
-                                    >
-                                        View Profile
-                                    </button>
+                                    {userRole !== 'customer' && (
+                                        <button 
+                                            onClick={() => navigate(`/admin/customer/${claim.customer?._id}`)}
+                                            style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: '0.8rem', cursor: 'pointer', padding: 0, marginTop: '0.5rem', textDecoration: 'underline' }}
+                                        >
+                                            View Profile
+                                        </button>
+                                    )}
                                 </div>
                                 <div style={{ padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '0.5rem', backgroundColor: '#f8fafc' }}>
                                     <h4 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.5rem' }}>Policy Details</h4>
@@ -275,7 +277,7 @@ const ClaimDetails = () => {
                                     <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '0.25rem' }}>Type: {claim.policy?.policyType?.name}</p>
                                     <p style={{ fontSize: '0.85rem', color: '#64748b' }}>Coverage: ${claim.policy?.coverageAmount?.toLocaleString()}</p>
                                     <button 
-                                        onClick={() => navigate(`/admin/policies/${claim.policy?._id}`)}
+                                        onClick={() => navigate(userRole === 'customer' ? `/customer/policies/${claim.policy?._id}` : `/admin/policies/${claim.policy?._id}`)}
                                         style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: '0.8rem', cursor: 'pointer', padding: 0, marginTop: '0.5rem', textDecoration: 'underline' }}
                                     >
                                         View Policy

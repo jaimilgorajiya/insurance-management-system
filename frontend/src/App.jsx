@@ -27,6 +27,11 @@ import Claims from './pages/Claims';
 import CreateClaim from './pages/CreateClaim';
 import Reports from './pages/Reports';
 import ClaimDetails from './pages/ClaimDetails';
+import MyPolicies from './pages/MyPolicies';
+import ShopPolicies from './pages/ShopPolicies';
+import MyClaims from './pages/MyClaims';
+import FileClaim from './pages/FileClaim';
+import PaymentHistory from './pages/PaymentHistory';
 
 function App() {
   return (
@@ -88,17 +93,26 @@ function App() {
           <Route path="/admin/providers" element={<Providers />} />
           <Route path="/admin/documents" element={<Documents />} />
           <Route path="/admin/reports" element={<Reports />} />
+          <Route path="/admin/payments" element={<PaymentHistory />} />
         </Route>
 
         {/* Agent Only Routes */}
         <Route element={<ProtectedRoute allowedRoles={['agent']} />}>
           <Route path="/agent/dashboard" element={<AgentDashboard />} />
           <Route path="/agent/commission" element={<AgentCommission />} />
+          <Route path="/agent/payments" element={<PaymentHistory />} />
         </Route>
 
         {/* Customer Only Routes */}
         <Route element={<ProtectedRoute allowedRoles={['customer']} />}>
           <Route path="/customer/dashboard" element={<CustomerDashboard />} />
+          <Route path="/customer/policies" element={<MyPolicies />} />
+          <Route path="/customer/shop" element={<ShopPolicies />} />
+          <Route path="/customer/claims" element={<MyClaims />} />
+          <Route path="/customer/claims/new" element={<FileClaim />} />
+          <Route path="/customer/claims/:id" element={<ClaimDetails />} />
+          <Route path="/customer/policies/:id" element={<PolicyDetails />} />
+          <Route path="/customer/payments" element={<PaymentHistory />} />
         </Route>
         
         {/* Fallback */}

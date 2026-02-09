@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import { showWarningAlert } from '../utils/swalUtils';
-import { UserPlus, FileText, FileCheck, Clock, DollarSign, TrendingUp, Users, Target, AlertCircle } from 'lucide-react';
+import { UserPlus, FileText, FileCheck, Clock, DollarSign, TrendingUp, Users, Target, AlertCircle, Shield } from 'lucide-react';
 import { 
     PieChart, Pie, Cell, Tooltip, ResponsiveContainer, 
     LineChart, Line, XAxis, YAxis, CartesianGrid 
@@ -412,11 +412,194 @@ export const AgentDashboard = () => {
 };
 
 export const CustomerDashboard = () => {
+    const navigate = useNavigate();
+    const [stats, setStats] = useState({
+        totalPolicies: 0,
+        activePolicies: 0,
+        totalClaims: 0,
+        pendingClaims: 0,
+        activePoliciesList: []
+    });
+    const [loading, setLoading] = useState(true);
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const userId = localStorage.getItem('userId');
+                
+                if (!userId || userId === 'undefined') {
+                    console.error("Invalid User ID in storage");
+                    localStorage.removeItem('userId');
+                    localStorage.removeItem('userRole');
+                    localStorage.removeItem('token');
+                    navigate('/login');
+                    setLoading(false);
+                    return;
+                }
+
+                // Parallel fetch
+                const [customerRes, claimsRes] = await Promise.all([
+                    fetch(`${API_BASE_URL}/customer/${userId}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch(`${API_BASE_URL}/claims`, { headers: { 'Authorization': `Bearer ${token}` } })
+                ]);
+
+                const customerData = await customerRes.json();
+                const claimsData = await claimsRes.json();
+
+                let newStats = { ...stats };
+
+                if (customerData.success) {
+                    const policies = customerData.data.purchasedPolicies || [];
+                    newStats.totalPolicies = policies.length;
+                    newStats.activePolicies = policies.filter(p => p.status === 'active').length;
+                    newStats.activePoliciesList = policies.filter(p => p.status === 'active').slice(0, 3); // Take top 3
+                }
+
+                if (claimsData.success) {
+                    const claims = claimsData.data || [];
+                    newStats.totalClaims = claims.length;
+                    newStats.pendingClaims = claims.filter(c => ['Submitted', 'Under Review', 'Info Required'].includes(c.status)).length;
+                }
+
+                setStats(newStats);
+
+            } catch (error) {
+                console.error("Error fetching customer dashboard data:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, []);
+
+    if (loading) return <Layout><div className="center-screen">Loading Dashboard...</div></Layout>;
+
     return (
         <Layout>
-            <div style={{ textAlign: 'center', padding: '3rem' }}>
-                <h2>Customer Dashboard</h2>
-                <p>Welcome, Customer.</p>
+             <div style={{ padding: '0 2rem 2rem 2rem' }}>
+                <div style={{ marginBottom: '2rem' }}>
+                    <h1 style={{ fontSize: '1.875rem', fontWeight: 'bold', color: '#0f172a' }}>My Dashboard</h1>
+                    <p style={{ color: '#64748b' }}>Welcome back! Here's an overview of your insurance portfolio.</p>
+                </div>
+
+                {/* Stats Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+                    <StatCard 
+                        title="Active Policies" 
+                        value={stats.activePolicies} 
+                        trend={`${stats.totalPolicies} Total Purchased`}
+                        trendColor="#64748b"
+                        icon={<FileCheck size={24} color="#10b981" />}
+                        bgColor="#ecfdf5"
+                    />
+                    <StatCard 
+                        title="Pending Claims" 
+                        value={stats.pendingClaims} 
+                        trend={stats.pendingClaims > 0 ? "Requires Attention" : "All Clear"}
+                        trendColor={stats.pendingClaims > 0 ? "#f59e0b" : "#10b981"}
+                        icon={<Clock size={24} color="#f59e0b" />}
+                        bgColor="#fffbeb"
+                    />
+                     <StatCard 
+                        title="Total Claims" 
+                        value={stats.totalClaims} 
+                        trend="Lifetime History"
+                        trendColor="#64748b"
+                        icon={<FileText size={24} color="#3b82f6" />}
+                        bgColor="#eff6ff"
+                    />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.5rem' }}>
+                    
+                    {/* Active Policies Snapshot */}
+                    <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '1rem', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#0f172a' }}>Active Policies</h3>
+                            <button 
+                                onClick={() => navigate('/customer/policies')}
+                                style={{ color: '#3b82f6', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 500 }}
+                            >
+                                View All
+                            </button>
+                        </div>
+                        
+                        {stats.activePoliciesList.length > 0 ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                {stats.activePoliciesList.map((p, index) => (
+                                    <div key={index} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', backgroundColor: '#f8fafc', borderRadius: '0.75rem', border: '1px solid #e2e8f0' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                            <div style={{ padding: '0.5rem', backgroundColor: '#eff6ff', borderRadius: '0.5rem' }}>
+                                                <Shield size={20} color="#3b82f6" />
+                                            </div>
+                                            <div>
+                                                <p style={{ fontWeight: 600, color: '#0f172a', margin: 0 }}>{p.policy?.policyName}</p>
+                                                <p style={{ fontSize: '0.875rem', color: '#64748b', margin: 0 }}>{p.policy?.policyType?.name}</p>
+                                            </div>
+                                        </div>
+                                        <div style={{ textAlign: 'right' }}>
+                                            <p style={{ fontWeight: 600, color: '#0f172a', margin: 0 }}>${p.policy?.coverageAmount?.toLocaleString()}</p>
+                                            <p style={{ fontSize: '0.75rem', color: '#64748b', margin: 0 }}>Coverage</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p style={{ color: '#64748b', textAlign: 'center', padding: '2rem' }}>No active policies found.</p>
+                        )}
+                    </div>
+
+                    {/* Quick Actions */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div 
+                            onClick={() => navigate('/customer/shop')}
+                            style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '1rem', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)', cursor: 'pointer', transition: 'transform 0.2s', display: 'flex', alignItems: 'center', gap: '1rem' }}
+                            onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                            onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                        >
+                            <div style={{ padding: '1rem', borderRadius: '50%', backgroundColor: '#eff6ff' }}>
+                                <DollarSign size={24} color="#3b82f6" />
+                            </div>
+                            <div>
+                                <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#0f172a', margin: '0 0 0.25rem 0' }}>Buy New Policy</h3>
+                                <p style={{ fontSize: '0.875rem', color: '#64748b', margin: 0 }}>Browse available plans</p>
+                            </div>
+                        </div>
+
+                        <div 
+                            onClick={() => navigate('/customer/claims/new')}
+                            style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '1rem', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)', cursor: 'pointer', transition: 'transform 0.2s', display: 'flex', alignItems: 'center', gap: '1rem' }}
+                            onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                            onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                        >
+                            <div style={{ padding: '1rem', borderRadius: '50%', backgroundColor: '#fff7ed' }}>
+                                <AlertCircle size={24} color="#f97316" />
+                            </div>
+                            <div>
+                                <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#0f172a', margin: '0 0 0.25rem 0' }}>File a Claim</h3>
+                                <p style={{ fontSize: '0.875rem', color: '#64748b', margin: 0 }}>Report an incident</p>
+                            </div>
+                        </div>
+
+                        <div 
+                            onClick={() => navigate('/profile')}
+                            style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '1rem', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)', cursor: 'pointer', transition: 'transform 0.2s', display: 'flex', alignItems: 'center', gap: '1rem' }}
+                            onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                            onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                        >
+                            <div style={{ padding: '1rem', borderRadius: '50%', backgroundColor: '#f0fdf4' }}>
+                                <UserPlus size={24} color="#10b981" />
+                            </div>
+                            <div>
+                                <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#0f172a', margin: '0 0 0.25rem 0' }}>My Profile</h3>
+                                <p style={{ fontSize: '0.875rem', color: '#64748b', margin: 0 }}>Update personal details</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </Layout>
     );

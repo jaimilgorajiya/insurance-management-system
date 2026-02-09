@@ -8,7 +8,7 @@ const router = Router();
 router.use(verifyJWT);
 
 router.route("/")
-    .get(authorizeRoles("admin", "agent"), getProviders)
+    .get(authorizeRoles("admin", "agent", "customer"), getProviders)
     .post(authorizeRoles("admin"), createProvider);
 
 router.route("/:id")

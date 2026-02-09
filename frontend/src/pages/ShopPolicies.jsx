@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { showSuccessAlert, showErrorAlert, showConfirmAction } from '../utils/swalUtils';
-import { Shield, Heart, Home, Car, Plane, Briefcase, Umbrella, Activity, Building, CheckCircle, ArrowLeft } from 'lucide-react';
+import { Shield, Heart, Home, Car, Plane, Briefcase, Umbrella, Activity, Building, ShoppingBag } from 'lucide-react';
 
 const calculateAge = (dobString) => {
     if (!dobString) return 0;
@@ -16,23 +16,16 @@ const calculateAge = (dobString) => {
     return age;
 };
 
-const BuyPolicy = () => {
+const ShopPolicies = () => {
     const navigate = useNavigate();
-    const { customerId } = useParams(); // Get customer ID from URL route
     const [policies, setPolicies] = useState([]);
     const [filteredPolicies, setFilteredPolicies] = useState([]);
     const [policyTypes, setPolicyTypes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [providers, setProviders] = useState([]);
-    const [customerName, setCustomerName] = useState('');
     const [customerAge, setCustomerAge] = useState(0);
     const [selectedType, setSelectedType] = useState(null);
-
-    // Vehicle Lookup State
-    const [vehicleNumber, setVehicleNumber] = useState('');
-    const [vehicleDetails, setVehicleDetails] = useState(null);
-    const [vehicleLoading, setVehicleLoading] = useState(false);
-    const [vehicleError, setVehicleError] = useState('');
+    const [userId, setUserId] = useState(null);
 
     const [filters, setFilters] = useState({
         search: '',
@@ -43,13 +36,21 @@ const BuyPolicy = () => {
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
     useEffect(() => {
-        if (customerId) {
-            fetchCustomerDetails(customerId);
+        const storedUserId = localStorage.getItem('userId');
+        if (storedUserId && storedUserId !== 'undefined') {
+            setUserId(storedUserId);
+            fetchMyDetails(storedUserId);
+        } else {
+            console.error("Invalid User ID in storage");
+            localStorage.removeItem('userId');
+            localStorage.removeItem('userRole');
+            localStorage.removeItem('token');
+            navigate('/login');
         }
         fetchPolicies();
         fetchPolicyTypes();
         fetchProviders();
-    }, [customerId]);
+    }, []);
 
     // Filter effect
     useEffect(() => {
@@ -79,21 +80,20 @@ const BuyPolicy = () => {
         setFilteredPolicies(result);
     }, [policies, selectedType, filters]);
 
-    const fetchCustomerDetails = async (id) => {
+    const fetchMyDetails = async (id) => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`${API_BASE_URL}/customer-onboarding/details/${id}`, {
+            const res = await fetch(`${API_BASE_URL}/customer/${id}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
-            if (res.ok) {
-                setCustomerName(data.data.customer.name);
-                if (data.data.customer.dateOfBirth) {
-                    setCustomerAge(calculateAge(data.data.customer.dateOfBirth));
+            if (res.ok && data.success) {
+                if (data.data.dateOfBirth) {
+                    setCustomerAge(calculateAge(data.data.dateOfBirth));
                 }
             }
         } catch (error) {
-            console.error("Error fetching customer details");
+            console.error("Error fetching my details");
         }
     };
 
@@ -142,35 +142,11 @@ const BuyPolicy = () => {
         }
     };
 
-    const fetchVehicleDetailsFrontend = async () => {
-        if (!vehicleNumber) return;
-        setVehicleLoading(true);
-        setVehicleError('');
-        setVehicleDetails(null);
-        try {
-            const token = localStorage.getItem('token');
-            const res = await fetch(`${API_BASE_URL}/vehicle/details/${vehicleNumber}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await res.json();
-            if (res.ok) {
-                setVehicleDetails(data.data);
-            } else {
-                setVehicleError(data.message || "Vehicle not found");
-            }
-        } catch (error) {
-            console.error(error);
-            setVehicleError("Failed to fetch vehicle details");
-        } finally {
-            setVehicleLoading(false);
-        }
-    };
-
     const handleBuyPolicy = async (policy) => {
         const confirmed = await showConfirmAction(
             'Confirm Purchase',
-            `Purchase ${policy.policyName} for ${customerName}?`,
-            'Yes, Buy Policy',
+            `Are you sure you want to purchase ${policy.policyName}?`,
+            'Yes, Buy Now',
             '#2563eb'
         );
 
@@ -178,8 +154,7 @@ const BuyPolicy = () => {
 
         try {
             const token = localStorage.getItem('token');
-            // Using the update endpoint for now, or a specialized purchase endpoint if created
-            const res = await fetch(`${API_BASE_URL}/customer/update/${customerId}`, {
+            const res = await fetch(`${API_BASE_URL}/customer/update/${userId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -190,8 +165,8 @@ const BuyPolicy = () => {
 
             if (!res.ok) throw new Error('Failed to purchase policy');
 
-            await showSuccessAlert('Policy purchased successfully');
-            navigate(`/admin/customers/${customerId}`);
+            await showSuccessAlert('Policy purchased successfully! Check "My Policies" for details.');
+            navigate('/customer/policies');
         } catch (error) {
             console.error(error);
             showErrorAlert('Failed to purchase policy');
@@ -215,121 +190,13 @@ const BuyPolicy = () => {
             <div className="onboarding-container">
                 <div className="page-header">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <button 
-                            className="btn-outline" 
-                            style={{ padding: '0.5rem', border: 'none', backgroundColor: 'transparent' }}
-                            onClick={() => navigate(`/admin/customers/${customerId}`)}
-                        >
-                            <ArrowLeft size={24} color="#64748b" />
-                        </button>
                         <div>
-                            <h1 className="page-title">Buy Policy</h1>
-                            <p className="page-subtitle">Select a policy for <strong>{customerName}</strong></p>
+                            <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                <ShoppingBag className="text-blue-600" /> Browse Policies
+                            </h1>
+                            <p className="page-subtitle">Find and purchase the perfect protection for you.</p>
                         </div>
                     </div>
-                </div>
-
-                {/* Vehicle Lookup Section */}
-                <div style={{ marginBottom: '1.5rem', background: 'linear-gradient(135deg, #1e293b, #0f172a)', padding: '1.5rem', borderRadius: '16px', color: 'white' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-                        <Car size={24} color="#60a5fa" />
-                        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'white', margin: 0 }}>Check Vehicle Details</h2>
-                    </div>
-                    <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1rem' }}>
-                        Enter vehicle number to check Challans, Registration, and Insurance status before buying policy.
-                    </p>
-                    
-                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
-                        <div style={{ display: 'flex', gap: '0.5rem', flex: 1, minWidth: '300px' }}>
-                            <input 
-                                type="text" 
-                                placeholder="Enter Vehicle No (e.g. GJ01AB1234)" 
-                                value={vehicleNumber}
-                                onChange={(e) => setVehicleNumber(e.target.value.toUpperCase())}
-                                className="form-input"
-                                style={{ 
-                                    flex: 1, 
-                                    backgroundColor: 'rgba(255, 255, 255, 0.1)', 
-                                    border: '1px solid rgba(255, 255, 255, 0.2)', 
-                                    color: 'white',
-                                    '::placeholder': { color: '#64748b' }
-                                }}
-                                onKeyDown={(e) => e.key === 'Enter' && fetchVehicleDetailsFrontend()}
-                            />
-                            <button 
-                                className="btn-primary" 
-                                onClick={fetchVehicleDetailsFrontend} 
-                                disabled={vehicleLoading}
-                                style={{ whiteSpace: 'nowrap', minWidth: '100px', justifyContent: 'center' }}
-                            >
-                                {vehicleLoading ? 'Checking...' : 'Check Info'}
-                            </button>
-                        </div>
-                    </div>
-
-                    {vehicleError && (
-                        <div style={{ marginTop: '1rem', padding: '0.75rem', backgroundColor: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px', color: '#fca5a5', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <Shield size={16} />
-                            {vehicleError}
-                        </div>
-                    )}
-
-                    {vehicleDetails && (
-                        <div style={{ marginTop: '1.5rem', padding: '1.5rem', backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
-                                <div>
-                                    <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Owner Name</div>
-                                    <div style={{ fontSize: '1rem', fontWeight: 600, color: 'white' }}>{vehicleDetails.ownerName}</div>
-                                </div>
-                                <div>
-                                    <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Vehicle Class</div>
-                                    <div style={{ fontSize: '1rem', fontWeight: 600, color: 'white' }}>{vehicleDetails.vehicleClass}</div>
-                                </div>
-                                <div>
-                                    <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Registration Date</div>
-                                    <div style={{ fontSize: '1rem', fontWeight: 600, color: 'white' }}>{vehicleDetails.registrationDate}</div>
-                                </div>
-                                <div>
-                                    <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Fuel Type</div>
-                                    <div style={{ fontSize: '1rem', fontWeight: 600, color: 'white' }}>{vehicleDetails.fuelType}</div>
-                                </div>
-                            </div>
-
-                            <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: '1rem', display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
-                                <div>
-                                    <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '0.25rem' }}>Insurance Status</div>
-                                    <div style={{ 
-                                        display: 'inline-flex', 
-                                        alignItems: 'center', 
-                                        gap: '0.375rem', 
-                                        padding: '0.25rem 0.75rem', 
-                                        borderRadius: '9999px',
-                                        backgroundColor: vehicleDetails.insurance?.isInsured ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-                                        color: vehicleDetails.insurance?.isInsured ? '#86efac' : '#fca5a5',
-                                        fontSize: '0.875rem',
-                                        fontWeight: 600
-                                    }}>
-                                        {vehicleDetails.insurance?.isInsured ? <CheckCircle size={14} /> : <Shield size={14} />}
-                                        {vehicleDetails.insurance?.isInsured ? 'Insured' : 'Expired / Not Insured'}
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '0.25rem' }}>Challan Status</div>
-                                    {vehicleDetails.challans && vehicleDetails.challans.length > 0 ? (
-                                        <div style={{ color: '#fca5a5', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                            <span style={{ backgroundColor: '#ef4444', color: 'white', padding: '0.1rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem' }}>{vehicleDetails.challans.length} PENDING</span>
-                                            <span style={{ fontSize: '0.875rem' }}>Total ₹{vehicleDetails.challans.reduce((acc, c) => acc + c.amount, 0)}</span>
-                                        </div>
-                                    ) : (
-                                        <div style={{ color: '#86efac', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                            <CheckCircle size={16} /> No Pending Challans
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    )}
                 </div>
 
                 {/* Filters */}
@@ -354,20 +221,6 @@ const BuyPolicy = () => {
                         <option value="IN_HOUSE">In-House</option>
                         <option value="THIRD_PARTY">Third-Party</option>
                     </select>
-
-                    {filters.source === 'THIRD_PARTY' && (
-                        <select 
-                            className="form-select"
-                            style={{ width: '180px' }}
-                            value={filters.provider}
-                            onChange={(e) => setFilters({...filters, provider: e.target.value})}
-                        >
-                            <option value="All">All Providers</option>
-                            {providers.filter(p => p.status === 'active').map(p => (
-                                <option key={p._id} value={p._id}>{p.name}</option>
-                            ))}
-                        </select>
-                    )}
                     
                     <button 
                         className="btn-outline" 
@@ -424,7 +277,7 @@ const BuyPolicy = () => {
                 </div>
 
                 {loading ? (
-                    <div className="text-center p-8">Loading policies...</div>
+                    <div className="text-center p-8">Loading available policies...</div>
                 ) : (
                     <div className="policy-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.5rem' }}>
                         {(() => {
@@ -433,23 +286,7 @@ const BuyPolicy = () => {
                                     <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px dashed #e2e8f0' }}>
                                         <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔍</div>
                                         <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#0f172a', marginBottom: '0.5rem' }}>No policies found</h3>
-                                        <p style={{ color: '#64748b', fontSize: '1rem', marginBottom: '1.5rem' }}>No policies match your search or filter criteria.</p>
-                                        <button className="btn-outline" onClick={() => { setFilters({ search: '', source: 'All', provider: 'All' }); setSelectedType(null); }}>Clear all filters</button>
-                                    </div>
-                                );
-                            }
-
-                            const hasEligible = filteredPolicies.some(p => customerAge >= (p.minAge || 0) && customerAge <= (p.maxAge || 100));
-                            
-                            if (!hasEligible && filteredPolicies.length > 0) {
-                                return (
-                                    <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem', backgroundColor: '#fff1f2', borderRadius: '12px', border: '1px dashed #fecaca' }}>
-                                        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚠️</div>
-                                        <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#e11d48', marginBottom: '0.5rem' }}>No Eligible Policies Found</h3>
-                                        <p style={{ color: '#64748b', fontSize: '1rem', marginBottom: '1.5rem' }}>
-                                            Based on the customer's age (<strong>{customerAge} years</strong>), no policies in this category are eligible.
-                                        </p>
-                                        <button className="btn-outline" onClick={() => setSelectedType(null)}>View All Categories</button>
+                                        <p style={{ color: '#64748b', fontSize: '1rem', marginBottom: '1.5rem' }}>Try adjusting your search filters.</p>
                                     </div>
                                 );
                             }
@@ -466,8 +303,7 @@ const BuyPolicy = () => {
                                         flexDirection: 'column',
                                         transition: 'all 0.2s',
                                         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
-                                        opacity: isEligible ? 1 : 0.7,
-                                        position: 'relative'
+                                        opacity: isEligible ? 1 : 0.7
                                     }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                                             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
@@ -525,21 +361,8 @@ const BuyPolicy = () => {
                                             </div>
                                             <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.5rem' }}>
                                                 Eligible Age: <strong style={{ color: isEligible ? '#64748b' : '#ef4444' }}>{policy.minAge} - {policy.maxAge} years</strong>
-                                                {!isEligible && ` (Customer: ${customerAge})`}
                                             </div>
                                         </div>
-
-                                        {policy.provider && (
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', padding: '0.75rem', backgroundColor: '#f8fafc', borderRadius: '8px' }}>
-                                                <div style={{ padding: '4px', backgroundColor: 'white', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
-                                                    <Building size={16} color="#64748b" />
-                                                </div>
-                                                <div>
-                                                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Provider</div>
-                                                    <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>{policy.provider.name}</div>
-                                                </div>
-                                            </div>
-                                        )}
 
                                         <div style={{ marginTop: 'auto' }}>
                                             <button 
@@ -562,4 +385,4 @@ const BuyPolicy = () => {
     );
 };
 
-export default BuyPolicy;
+export default ShopPolicies;

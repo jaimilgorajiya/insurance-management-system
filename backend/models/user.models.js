@@ -156,7 +156,7 @@ const userSchema = new mongoose.Schema({
         },
         status: {
             type: String,
-            enum: ["active", "expired", "cancelled", "claimed"],
+            enum: ["active", "expired", "cancelled", "claimed", "matured"],
             default: "active"
         },
         policyDocument: {  // Path to the generated PDF
@@ -165,6 +165,12 @@ const userSchema = new mongoose.Schema({
         agentId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User"
+        },
+        nextPaymentDate: {
+            type: Date
+        },
+        lastPaymentDate: {
+            type: Date
         }
     }],
     assignedAgentId: {

@@ -23,9 +23,24 @@ const LockIcon = () => (
   </svg>
 );
 
+const EyeIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M1 12S5 4 12 4s11 8 11 8-4 8-11 8-11-8-11-8z" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <circle cx="12" cy="12" r="3" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const EyeOffIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <line x1="1" y1="1" x2="23" y2="23" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -100,7 +115,7 @@ export default function Login() {
         localStorage.setItem('userRole', user.role);
         localStorage.setItem('userPermissions', JSON.stringify(user.permissions || {}));
         localStorage.setItem('userName', user.name);
-        localStorage.setItem('userId', user._id);
+        localStorage.setItem('userId', user.id || user._id);
         localStorage.setItem('userEmail', user.email);
 
         // Handle Remember Me
@@ -166,7 +181,7 @@ export default function Login() {
               </div>
             </div>
 
-            <div className="login-form-group">
+              <div className="login-form-group">
               <label className="login-form-label" htmlFor="password">Password</label>
               <div className="login-input-group">
                 <span className="login-input-icon">
@@ -174,7 +189,7 @@ export default function Login() {
                 </span>
                 <input
                   id="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   className="login-form-input"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -182,6 +197,14 @@ export default function Login() {
                   required
                   autoComplete="current-password"
                 />
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                </button>
                </div>
             </div>
 
@@ -207,7 +230,7 @@ export default function Login() {
         </div>
         
         <footer className="login-footer">
-          <p>© 2026 InsureCRM. All rights reserved.</p>
+          <p>© 2026 InsureCRM | All rights reserved | Made by Iflora Info Pvt. Ltd.</p>
         </footer>
       </div>
     </div>

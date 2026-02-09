@@ -1,11 +1,13 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { hasPermission } from '../utils/permissionUtils';
+import { isTokenExpired, clearAuthData } from '../utils/authUtils';
 
 const ProtectedRoute = ({ allowedRoles, module, action }) => {
   const token = localStorage.getItem('token');
   const userRole = localStorage.getItem('userRole');
 
-  if (!token) {
+  if (!token || isTokenExpired(token)) {
+    if (token) clearAuthData();
     return <Navigate to="/login" replace />;
   }
 

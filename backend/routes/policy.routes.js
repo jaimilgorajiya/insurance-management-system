@@ -19,7 +19,7 @@ router.use(verifyJWT);
 router.route("/stats/summary").get(authorizeRoles("admin", "agent"), getPolicySummary);
 
 router.route("/")
-    .get(authorizeRoles("admin", "agent"), getPolicies)
+    .get(authorizeRoles("admin", "agent", "customer"), getPolicies)
     .post(authorizeRoles("admin"), createPolicy);
 
 router.route("/:id")

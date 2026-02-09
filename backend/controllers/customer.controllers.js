@@ -175,6 +175,61 @@ export const getCustomerById = async (req, res) => {
             }
         }
 
+        // Lazy Maturity Check: Auto-update status if tenure is completed/paid
+        let modified = false;
+        
+        // Helper to clone date
+        const addMonths = (d, m) => {
+            const newDate = new Date(d);
+            newDate.setMonth(newDate.getMonth() + m);
+            return newDate;
+        };
+
+        if (customer.purchasedPolicies && customer.purchasedPolicies.length > 0) {
+            for (const p of customer.purchasedPolicies) {
+                // Ensure policy details are available (populated)
+                if (p.status === 'active' && p.policy && p.policy.tenureValue) {
+                    const policyDetails = p.policy;
+                    const purchaseDate = new Date(p.purchaseDate);
+                    
+                    // Calculate Expiry Date
+                    let expiryDate = new Date(purchaseDate);
+                    if (policyDetails.tenureUnit === 'years') {
+                        expiryDate.setFullYear(expiryDate.getFullYear() + policyDetails.tenureValue);
+                    } else if (policyDetails.tenureUnit === 'months') {
+                        expiryDate.setMonth(expiryDate.getMonth() + policyDetails.tenureValue);
+                    } else { // days
+                        expiryDate.setDate(expiryDate.getDate() + policyDetails.tenureValue);
+                    }
+
+                    // Determine "Next Expected Payment"
+                    // If nextPaymentDate is set, use it. If not, default to Purchase + 1 Month
+                    let nextPay = p.nextPaymentDate ? new Date(p.nextPaymentDate) : new Date(purchaseDate);
+                    if (!p.nextPaymentDate) {
+                        nextPay.setMonth(nextPay.getMonth() + 1);
+                    }
+                    
+                    // Normalize for comparison
+                    const nextCompare = new Date(nextPay).setHours(0,0,0,0);
+                    const expiryCompare = new Date(expiryDate).setHours(0,0,0,0);
+
+                    // Logic: If the next time I have to pay is AFTER or ON the policy has already expired,
+                    // THEN I have fully paid for the term.
+                    if (nextCompare >= expiryCompare) {
+                        p.status = 'matured';
+                        p.nextPaymentDate = null;
+                        modified = true;
+                    }
+                }
+            }
+        
+            if (modified) {
+                customer.markModified('purchasedPolicies');
+                await customer.save();
+                console.log(`[getCustomerById] Auto-updated maturity status for customer ${customer._id}`);
+            }
+        }
+
         res.status(200).json({ success: true, data: customer });
     } catch (e) {
         console.error(`[getCustomerById] Error:`, e);
@@ -190,7 +245,11 @@ export const updateCustomer = async (req, res) => {
         // Find the customer first to get details for PDF if needed
         const query = { _id: id, role: "customer" };
         if (req.user.role === "customer") {
-            query.createdBy = req.user._id;
+             // Customer can only update themselves
+             if (id !== req.user._id.toString()) {
+                 return res.status(403).json({ message: "Access denied" });
+             }
+             // No additional filter needed as ID matches
         } else if (req.user.role === "agent") {
             query.assignedAgentId = req.user._id;
         }

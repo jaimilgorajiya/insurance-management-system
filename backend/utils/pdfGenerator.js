@@ -122,3 +122,95 @@ const drawLogo = (doc, x, y) => {
 
     doc.restore();
 };
+
+export const generatePaymentReceiptPDF = (paymentData, customerData, policyData, filePath) => {
+    return new Promise((resolve, reject) => {
+        try {
+            const doc = new PDFDocument({ margin: 50 });
+            const stream = fs.createWriteStream(filePath);
+            
+            doc.pipe(stream);
+
+            // -- Header --
+            drawLogo(doc, 50, 35);
+
+            doc.fillColor('#444444')
+               .fontSize(20)
+               .text('Payment Receipt', 120, 57)
+               .fontSize(10)
+               .text('Insurance CRM Ltd.', 200, 65, { align: 'right' })
+               .text('123 Insurance Blvd, Receipt City', 200, 80, { align: 'right' });
+
+            doc.moveDown();
+
+            doc.strokeColor("#aaaaaa")
+               .lineWidth(1)
+               .moveTo(50, 100)
+               .lineTo(550, 100)
+               .stroke();
+
+            // -- Receipt Details --
+            doc.fontSize(12).font('Helvetica-Bold').text('Receipt Details', 50, 130);
+            doc.fontSize(10).font('Helvetica');
+            doc.text(`Receipt Number: ${paymentData.paymentId}`, 50, 150);
+            doc.text(`Date: ${new Date().toLocaleDateString()}`, 50, 165);
+            doc.text(`Payment Method: Razorpay`, 50, 180);
+            
+            doc.moveDown();
+
+            // -- Customer & Policy Details --
+            doc.fontSize(12).font('Helvetica-Bold').text('Customer & Policy Details', 50, 220);
+            doc.fontSize(10).font('Helvetica');
+            doc.text(`Name: ${customerData.name}`, 50, 240);
+            doc.text(`Policy: ${policyData.policyName}`, 50, 255);
+            doc.text(`Coverage: ${policyData.policyType?.name || policyData.policyType || 'N/A'}`, 50, 270);
+            
+            doc.moveDown();
+
+            // -- Payment Summary --
+            doc.fontSize(12).font('Helvetica-Bold').text('Payment Summary', 50, 310);
+            doc.fontSize(10).font('Helvetica');
+            
+            doc.strokeColor("#eeeeee")
+               .lineWidth(1)
+               .moveTo(50, 330)
+               .lineTo(550, 330)
+               .stroke();
+
+            doc.text('Description', 50, 340).text('Amount', 450, 340, { align: 'right' });
+            
+            doc.strokeColor("#eeeeee")
+               .lineWidth(1)
+               .moveTo(50, 355)
+               .lineTo(550, 355)
+               .stroke();
+
+            doc.text(`Premium Payment - ${policyData.policyName}`, 50, 365).text(`INR ${paymentData.amount}`, 450, 365, { align: 'right' });
+
+            doc.moveDown(2);
+            
+            doc.fontSize(14).font('Helvetica-Bold').text('Total Paid:', 350, 420).text(`INR ${paymentData.amount}`, 450, 420, { align: 'right' });
+
+            // -- Footer --
+            doc.fontSize(10).text(
+                'This is a computer-generated receipt and does not require a physical signature.',
+                50,
+                700,
+                { align: 'center', width: 500 }
+            );
+
+            doc.end();
+
+            stream.on('finish', () => {
+                resolve(filePath);
+            });
+
+            stream.on('error', (err) => {
+                reject(err);
+            });
+
+        } catch (error) {
+            reject(error);
+        }
+    });
+};

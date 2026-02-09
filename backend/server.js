@@ -15,11 +15,15 @@ import providerRoutes from "./routes/provider.routes.js";
 import documentRoutes from "./routes/document.routes.js";
 import claimRoutes from "./routes/claim.routes.js";
 import reportRoutes from "./routes/report.routes.js";
+import paymentRoutes from "./routes/payment.routes.js";
+import vehicleRoutes from "./routes/vehicle.routes.js";
 import { verifyJWT } from "./middlewares/auth.middleware.js";
 import connectDB from "./db/db.js";
+import cron from "node-cron";
+import { checkPaymentReminders } from "./services/scheduler.service.js";
 
 dotenv.config();
-// Trigger restart 2
+// Trigger restart 3
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -63,6 +67,8 @@ app.use("/api/providers", providerRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/claims", claimRoutes);
 app.use("/api/reports", reportRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/vehicle", vehicleRoutes);
 
 // Shared endpoints
 app.get("/api/me", verifyJWT, (req, res) => {
@@ -101,6 +107,13 @@ connectDB()
     .then(() => {
         app.listen(PORT, () => {
             console.log(`🚀 Insurance CRM Server is running on port ${PORT}`);
+            
+            // Initialize Scheduled Jobs
+            // Run at 9:00 AM daily
+            cron.schedule('0 9 * * *', () => {
+                checkPaymentReminders();
+            });
+            console.log("⏰ Scheduled Jobs Initialized");
         });
     })
     .catch((err) => {

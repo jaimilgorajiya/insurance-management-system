@@ -4,6 +4,8 @@ import Sidebar from './Sidebar';
 import Header from './Header';
 import './Layout.css';
 
+import { decodeToken, logoutUser } from '../utils/authUtils';
+
 const Layout = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
   const { permissionsUpdated } = usePermission();
@@ -11,6 +13,26 @@ const Layout = ({ children }) => {
   const toggleSidebar = () => {
     setCollapsed(!collapsed);
   };
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      const decoded = decodeToken(token);
+      if (decoded && decoded.exp) {
+        const currentTime = Date.now() / 1000;
+        const timeUntilExpiry = (decoded.exp - currentTime) * 1000;
+
+        if (timeUntilExpiry <= 0) {
+          logoutUser();
+        } else {
+          const timer = setTimeout(() => {
+            logoutUser();
+          }, timeUntilExpiry);
+          return () => clearTimeout(timer);
+        }
+      }
+    }
+  }, []);
 
   useEffect(() => {
     syncPermissions();

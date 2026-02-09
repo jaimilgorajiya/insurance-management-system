@@ -356,13 +356,22 @@ const CustomerDetails = () => {
                         <h3 className="review-section-title" style={{ marginBottom: 0 }}>Purchased Policy Details</h3>
                         {(localStorage.getItem('userRole') === 'admin' || 
                           (localStorage.getItem('userRole') === 'agent' && (hasPermission('customers', 'edit') || hasPermission('policies', 'view')))) && (
-                            <button 
-                                className="btn-primary" 
-                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}
-                                onClick={() => navigate(`/admin/customers/${customer._id}/buy-policy`)}
-                            >
-                                + Buy Policy
-                            </button>
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <button 
+                                    className="btn-outline" 
+                                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                                    onClick={() => navigate(`/${localStorage.getItem('userRole')}/payments?customerId=${customer._id}`)}
+                                >
+                                    View Payment History
+                                </button>
+                                <button 
+                                    className="btn-primary" 
+                                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}
+                                    onClick={() => navigate(`/admin/customers/${customer._id}/buy-policy`)}
+                                >
+                                    + Buy Policy
+                                </button>
+                            </div>
                         )}
                     </div>
                     {customer.purchasedPolicies && customer.purchasedPolicies.length > 0 ? (

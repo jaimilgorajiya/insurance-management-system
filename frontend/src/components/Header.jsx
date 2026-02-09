@@ -1,6 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MenuIcon, SearchIcon, BellIcon } from './LayoutIcons';
+// import { MenuIcon, SearchIcon, BellIcon } from './LayoutIcons'; 
+// Icons removed as per request
+
 import './Layout.css';
 
 const Header = ({ toggleSidebar }) => {
@@ -20,23 +22,9 @@ const Header = ({ toggleSidebar }) => {
   return (  
     <header className="top-header">
       <div className="header-left">
-      
-        <div className="search-bar">
-          <SearchIcon />
-          <input 
-            type="text" 
-            placeholder="Search customers, policies, claims..." 
-            className="search-input"
-          />
-        </div>
       </div>
 
       <div className="header-right">
-        <button className="icon-btn">
-          <BellIcon />
-          <span className="notification-badge"></span>
-        </button>
-        
         <div 
           className="user-profile" 
           onClick={() => navigate('/profile')}

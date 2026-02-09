@@ -208,6 +208,11 @@ export const getClaimById = asyncHandler(async (req, res) => {
         }
     }
 
+    // Filter internal notes for customers
+    if (req.user.role === 'customer') {
+        claim.notes = claim.notes.filter(note => !note.isInternal);
+    }
+
     return res.status(200).json(
         new ApiResponse(200, claim, "Claim details fetched successfully")
     );

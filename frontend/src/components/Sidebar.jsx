@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   ShieldLogo, DashboardIcon, UsersIcon, CustomersIcon, 
   PoliciesIcon, AgentsIcon, ClaimsIcon, DocumentsIcon, 
-  NotificationsIcon, ReportsIcon, LogoutIcon, MenuIcon, CloseIcon, CommissionIcon
+  NotificationsIcon, ReportsIcon, LogoutIcon, MenuIcon, CloseIcon, CommissionIcon, PaymentIcon
 } from './LayoutIcons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './Layout.css';
@@ -23,6 +23,7 @@ const Sidebar = ({ collapsed, toggleSidebar }) => {
     { label: 'Policies', icon: <PoliciesIcon />, path: '/admin/policies' },
     { label: 'Agents', icon: <AgentsIcon />, path: '/admin/agents' },
     { label: 'Claims', icon: <ClaimsIcon />, path: '/admin/claims' },
+    { label: 'Payments', icon: <PaymentIcon />, path: '/admin/payments' },
     { label: 'Documents', icon: <DocumentsIcon />, path: '/admin/documents' },
     { label: 'Notifications', icon: <NotificationsIcon />, path: '/admin/notifications' },
     { label: 'Reports', icon: <ReportsIcon />, path: '/admin/reports' },
@@ -33,18 +34,32 @@ const Sidebar = ({ collapsed, toggleSidebar }) => {
     { label: 'My Customers', icon: <CustomersIcon />, path: '/admin/customers' },
     { label: 'Policies', icon: <PoliciesIcon />, path: '/admin/policies' },
     { label: 'Claims', icon: <ClaimsIcon />, path: '/admin/claims' },
+    { label: 'Payments', icon: <PaymentIcon />, path: '/agent/payments' },
     { label: 'Commission', icon: <CommissionIcon />, path: '/agent/commission' },
   ];
 
-  const menuItems = userRole === 'admin' 
-    ? adminMenuItems 
-    : agentMenuItems.filter(item => {
+  const customerMenuItems = [
+    { label: 'Dashboard', icon: <DashboardIcon />, path: '/customer/dashboard' },
+    { label: 'My Policies', icon: <PoliciesIcon />, path: '/customer/policies' },
+    { label: 'Shop Policies', icon: <CommissionIcon />, path: '/customer/shop' },
+    { label: 'My Claims', icon: <ClaimsIcon />, path: '/customer/claims' },
+    { label: 'Payments', icon: <PaymentIcon />, path: '/customer/payments' },
+    { label: 'Profile', icon: <UsersIcon />, path: '/profile' },
+  ];
+
+  let menuItems = [];
+  if (userRole === 'admin') {
+      menuItems = adminMenuItems;
+  } else if (userRole === 'agent') {
+      menuItems = agentMenuItems.filter(item => {
         if (item.label === 'My Customers') return hasPermission('customers', 'view');
         if (item.label === 'Policies') return hasPermission('policies', 'view');
         if (item.label === 'Claims') return hasPermission('claims', 'view');
-        // Add other checks as permissions expand
         return true;
       });
+  } else if (userRole === 'customer') {
+      menuItems = customerMenuItems;
+  }
 
   const handleLogout = async () => {
     const isConfirmed = await showConfirmAction(
