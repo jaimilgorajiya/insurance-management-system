@@ -120,7 +120,7 @@ const MyClaims = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                     <div>
                         <h1 style={{ fontSize: '1.875rem', fontWeight: 'bold', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                            <FileText className="text-blue-600" /> My Claims
+                            My Claims
                         </h1>
                         <p style={{ color: '#64748b', marginTop: '0.5rem' }}>Track the status of your insurance claims</p>
                     </div>

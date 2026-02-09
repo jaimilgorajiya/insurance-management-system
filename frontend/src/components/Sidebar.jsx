@@ -25,7 +25,7 @@ const Sidebar = ({ collapsed, toggleSidebar }) => {
     { label: 'Claims', icon: <ClaimsIcon />, path: '/admin/claims' },
     { label: 'Payments', icon: <PaymentIcon />, path: '/admin/payments' },
     { label: 'Documents', icon: <DocumentsIcon />, path: '/admin/documents' },
-    { label: 'Notifications', icon: <NotificationsIcon />, path: '/admin/notifications' },
+    // { label: 'Notifications', icon: <NotificationsIcon />, path: '/admin/notifications' },
     { label: 'Reports', icon: <ReportsIcon />, path: '/admin/reports' },
   ];
 

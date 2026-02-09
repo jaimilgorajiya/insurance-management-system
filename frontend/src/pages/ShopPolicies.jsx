@@ -192,7 +192,7 @@ const ShopPolicies = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <div>
                             <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                <ShoppingBag className="text-blue-600" /> Browse Policies
+                                Browse Policies
                             </h1>
                             <p className="page-subtitle">Find and purchase the perfect protection for you.</p>
                         </div>
