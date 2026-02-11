@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   ShieldLogo, DashboardIcon, UsersIcon, CustomersIcon, 
   PoliciesIcon, AgentsIcon, ClaimsIcon, DocumentsIcon, 
-  NotificationsIcon, ReportsIcon, LogoutIcon, MenuIcon, CloseIcon, CommissionIcon, PaymentIcon
+  NotificationsIcon, ReportsIcon, LogoutIcon, MenuIcon, CloseIcon, CommissionIcon, PaymentIcon, SupportIcon
 } from './LayoutIcons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './Layout.css';
@@ -27,6 +27,7 @@ const Sidebar = ({ collapsed, toggleSidebar }) => {
     { label: 'Documents', icon: <DocumentsIcon />, path: '/admin/documents' },
     // { label: 'Notifications', icon: <NotificationsIcon />, path: '/admin/notifications' },
     { label: 'Reports', icon: <ReportsIcon />, path: '/admin/reports' },
+    { label: 'Support', icon: <SupportIcon />, path: '/admin/support' },
   ];
 
   const agentMenuItems = [
@@ -36,6 +37,7 @@ const Sidebar = ({ collapsed, toggleSidebar }) => {
     { label: 'Claims', icon: <ClaimsIcon />, path: '/admin/claims' },
     { label: 'Payments', icon: <PaymentIcon />, path: '/agent/payments' },
     { label: 'Commission', icon: <CommissionIcon />, path: '/agent/commission' },
+    { label: 'Support', icon: <SupportIcon />, path: '/agent/support' },
   ];
 
   const customerMenuItems = [
@@ -45,6 +47,7 @@ const Sidebar = ({ collapsed, toggleSidebar }) => {
     { label: 'My Claims', icon: <ClaimsIcon />, path: '/customer/claims' },
     { label: 'Payments', icon: <PaymentIcon />, path: '/customer/payments' },
     { label: 'Profile', icon: <UsersIcon />, path: '/profile' },
+    { label: 'Support', icon: <SupportIcon />, path: '/customer/support' },
   ];
 
   let menuItems = [];

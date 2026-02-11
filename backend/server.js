@@ -17,6 +17,7 @@ import claimRoutes from "./routes/claim.routes.js";
 import reportRoutes from "./routes/report.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
 import vehicleRoutes from "./routes/vehicle.routes.js";
+import ticketRoutes from "./routes/ticket.routes.js";
 import { verifyJWT } from "./middlewares/auth.middleware.js";
 import connectDB from "./db/db.js";
 import cron from "node-cron";
@@ -69,6 +70,7 @@ app.use("/api/claims", claimRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/vehicle", vehicleRoutes);
+app.use("/api/tickets", ticketRoutes);
 
 // Shared endpoints
 app.get("/api/me", verifyJWT, (req, res) => {
@@ -103,9 +105,21 @@ app.use((err, req, res, next) => {
 });
 
 // Database Connection and Server Start
+import { createServer } from "http";
+import { initializeSocket } from "./services/socket.service.js";
+
+// ... existing imports
+
+// Create HTTP server
+const httpServer = createServer(app);
+
+// Initialize Socket.io
+initializeSocket(httpServer);
+
+// Database Connection and Server Start
 connectDB()
     .then(() => {
-        app.listen(PORT, () => {
+        httpServer.listen(PORT, () => {
             console.log(`🚀 Insurance CRM Server is running on port ${PORT}`);
             
             // Initialize Scheduled Jobs
